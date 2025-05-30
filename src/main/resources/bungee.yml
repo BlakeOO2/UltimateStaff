@@ -1,0 +1,5 @@
+# bungee.yml
+name: UltimateStaff
+version: '1.0.0'
+main: com.smokypeaks.bungee.BungeeMain
+author: Hydrantz

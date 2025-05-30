@@ -1,0 +1,34 @@
+# plugin.yml
+name: UltimateStaff
+version: '1.0.0'
+main: com.smokypeaks.Main
+api-version: '1.21'
+authors: Hydrantz
+description: Ultimate staff management plugin
+libraries:
+  - com.google.code.gson:gson:2.10.1
+
+permissions:
+  ultimatestaff.admin.*:
+    description: Gives access to all admin commands
+    children:
+      ultimatestaff.admin.updates: true
+      ultimatestaff.admin.chat: true
+      ultimatestaff.admin.reload: true
+
+  ultimatestaff.staff.*:
+    description: Gives access to all staff commands
+    children:
+      ultimatestaff.staff.chat: true
+      ultimatestaff.staff.mode: true
+      ultimatestaff.staff.vanish: true
+      ultimatestaff.staff.freeze: true
+      ultimatestaff.staff.invsee: true
+      ultimatestaff.staff.endersee: true
+      ultimatestaff.staff.teleport: true
+      ultimatestaff.staff.restart: true
+
+  ultimatestaff.alerts.*:
+    description: Gives access to all alerts
+    children:
+      ultimatestaff.alerts.mining: true

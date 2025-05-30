@@ -1,0 +1,6 @@
+# config.yml
+github:
+  repo: "BlakeOO2/UltimateStaff"
+  branch: "main"
+auto-update: true
+update-check-interval: 3600 # in seconds (1 hour)
