@@ -37,7 +37,7 @@ public class Main extends JavaPlugin {
             initializeBungee();
         } else {
             initializeServer();
-        }
+        } //test
 
         // Register commands
         getCommand("ultimatestaffupdate").setExecutor(new UpdateCheckCommand(this));
