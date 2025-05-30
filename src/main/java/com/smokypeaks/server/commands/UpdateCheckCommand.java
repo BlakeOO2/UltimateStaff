@@ -22,7 +22,7 @@ public class UpdateCheckCommand implements CommandExecutor {
         }
 
         sender.sendMessage("§6[UltimateStaff] §eChecking for updates...");
-        plugin.getUpdateChecker().checkForUpdates(true); // Add a boolean parameter to force check
+        plugin.getUpdateChecker().checkForUpdates(true);
         return true;
     }
 }

@@ -1,13 +1,16 @@
-# plugin.yml
 name: UltimateStaff
-version: '1.0.0'
+version: '1.0.1'
 main: com.smokypeaks.Main
 api-version: '1.21'
-authors: Hydrantz
+authors: [Hydrantz]  # Note the square brackets to make it a list
 description: Ultimate staff management plugin
 libraries:
   - com.google.code.gson:gson:2.10.1
-
+commands:
+  ultimatestaffupdate:
+    description: Check for plugin updates
+    usage: /ultimatestaffupdate
+    permission: ultimatestaff.admin.updates
 permissions:
   ultimatestaff.admin.*:
     description: Gives access to all admin commands
