@@ -1,7 +1,8 @@
 name: UltimateStaff
-version: '1.0.1'
+version: '1.0.2'
 main: com.smokypeaks.Main
 api-version: '1.21'
+softdepends: [LuckPerms]
 authors: [Hydrantz]  # Note the square brackets to make it a list
 description: Ultimate staff management plugin
 libraries:
@@ -11,6 +12,52 @@ commands:
     description: Check for plugin updates
     usage: /ultimatestaffupdate
     permission: ultimatestaff.admin.updates
+  staffmode:
+    description: Toggle staff mode
+    usage: /staffmode
+    aliases: [ sm, staff ]
+    permission: ultimatestaff.staff.mode
+  endersee:
+    description: View a player's enderchest
+    usage: /endersee <player>
+    aliases: [ echest, ec ]
+    permission: ultimatestaff.staff.endersee
+  stp:
+    description: Staff teleport commands
+    usage: /stp <player|random|back|pos> [args]
+    aliases: [ stafftp ]
+    permission: ultimatestaff.staff.teleport
+  miningalerts:
+    description: Toggle mining alerts
+    usage: /miningalerts
+    aliases: [ ma, minealert ]
+    permission: ultimatestaff.staff.alerts.mining
+  miningconfig:
+    description: Configure mining alerts
+    usage: /miningconfig <toggle|message|sound> <material> [args]
+    permission: ultimatestaff.admin.alerts.config
+  restart:
+    description: Schedule a server restart
+    usage: /restart <time> [reason]
+    aliases: [ serverrestart ]
+    permission: ultimatestaff.admin.restart
+  reloadpunishments:
+    description: Reload punishment configurations
+    permission: ultimatestaff.admin.reload
+  miningdebug:
+    description: Debug mining alert settings
+    permission: ultimatestaff.admin.debug
+  discordreload:
+    description: Reload Discord integration
+    usage: /discordreload
+    permission: ultimatestaff.admin.discord
+
+  clearchat:
+    description: Clear the chat for all players or specific players
+    usage: /clearchat [self|player <name>|all]
+    aliases: [ cc ]
+    permission: ultimatestaff.staff.clearchat
+
 permissions:
   ultimatestaff.admin.*:
     description: Gives access to all admin commands
@@ -35,3 +82,22 @@ permissions:
     description: Gives access to all alerts
     children:
       ultimatestaff.alerts.mining: true
+
+  ultimatestaff.admin.inventory.modify:
+    description: Allows modification of player inventories
+    default: op
+    ultimatestaff.staff.inventory.view:
+      description: Allows viewing player inventories
+      default: false
+    ultimatestaff.alerts.mining:
+      description: Allows receiving mining alerts
+      default: false
+  ultimatestaff.staff.alerts.mining:
+    description: Allows receiving mining alerts
+    default: op
+    ultimatestaff.admin.alerts.config:
+      description: Allows configuring mining alerts
+      default: op
+  ultimatestaff.staff.invsee.notify:
+    description: Receive notifications when staff members modify player inventories
+    default: op

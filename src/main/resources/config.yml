@@ -3,5 +3,194 @@ github:
   repo: "BlakeOO2/UltimateStaff"
   branch: "main"
 auto-update: true
-update-check-interval: 3600
-debug: true
+
+chat:
+  staff:
+    default-format: "&6[SC] &7[%server%] %prefix%%name%&7: &f%message%"
+    group-formats:
+      owner: "&6[SC] &4OWNER &7[%server%] %name%&7: &f%message%"
+      admin: "&6[SC] &cAdmin &7[%server%] %name%&7: &f%message%"
+      head-mod: "&6[SC] &4HMod &7[%server%] %name%&7: &f%message%"
+      mod: "&6[SC] &2Mod &7[%server%] %name%&7: &f%message%"
+      trial-mod: "&6[SC] &aTMod &7[%server%] %name%&7: &f%message%"
+      helper: "&6[SC] &eHelper &7[%server%] %name%&7: &f%message%"
+    sound:
+      enabled: true
+      type: "ENTITY_EXPERIENCE_ORB_PICKUP"
+      volume: 1.0
+      pitch: 1.0
+
+  admin:
+    default-format: "&c[AC] &7[%server%] %prefix%%name%&7: &f%message%"
+    group-formats:
+      owner: "&c[AC] &4OWNER &7[%server%] %name%&7: &f%message%"
+      admin: "&c[AC] &cAdmin &7[%server%] %name%&7: &f%message%"
+      head-mod: "&c[AC] &4HMod &7[%server%] %name%&7: &f%message%"
+    sound:
+      enabled: true
+      type: "BLOCK_NOTE_BLOCK_PLING"
+      volume: 1.0
+      pitch: 2.0
+
+# Store player preferences
+data:
+  staff-chat-sound-disabled: []
+  admin-chat-sound-disabled: []
+
+
+
+
+discord:
+  enabled: true
+  bot-token: "AddTokenHere"
+  channels:
+    staff-chat: "1372452537680269372"  # Discord channel ID for staff chat
+    admin-chat: "1367550043065815142"  # Discord channel ID for admin chat
+  format:
+    discord-to-minecraft: "&9[Discord] &b%username%&f: %message%"
+    minecraft-to-discord: "**[MC]** %username%: %message%"
+
+
+mining-alerts:
+  global:
+    default-enabled: true
+    staff-preferences:
+      alert-radius: 100
+      format-options:
+        show-coordinates: true
+        show-world: true
+    colors:
+      normal: "&e"
+      vein: "&a"
+      suspicious: "&c"
+
+  diamond_ore:
+    enabled: true
+    message: "&6[Mining] &e%player% found Diamond Ore at %x%, %y%, %z%"
+    sound:
+      enabled: true
+      type: "BLOCK_NOTE_BLOCK_PLING"
+      volume: 1.0
+      pitch: 1.0
+
+  deepslate_diamond_ore:
+    enabled: true
+    message: "&6[Mining] &e%player% found Deepslate Diamond Ore at %x%, %y%, %z%"
+    sound:
+      enabled: true
+      type: "BLOCK_NOTE_BLOCK_PLING"
+      volume: 1.0
+      pitch: 1.0
+
+  ancient_debris:
+    enabled: true
+    message: "&6[Mining] &e%player% found Ancient Debris at %x%, %y%, %z%"
+    sound:
+      enabled: true
+      type: "BLOCK_NOTE_BLOCK_PLING"
+      volume: 1.0
+      pitch: 1.0
+
+punishments:
+  categories:
+    bans:
+      name: "§c§lBans"
+      icon: DIAMOND_SWORD
+      slot: 11
+      punishments:
+        hacking:
+          name: "§c§lHacking"
+          icon: DIAMOND_SWORD
+          lore:
+            - "§7Duration: §f30 days"
+            - "§7Click to ban for hacking"
+          duration: "30d"
+          command: "ban %player% %duration% Hacking/Cheating"
+        griefing:
+          name: "§c§lGriefing"
+          icon: TNT
+          lore:
+            - "§7Duration: §f14 days"
+            - "§7Click to ban for griefing"
+          duration: "14d"
+          command: "ban %player% %duration% Griefing"
+        inappropriate_build:
+          name: "§c§lInappropriate Build"
+          icon: BRICK
+          lore:
+            - "§7Duration: §f7 days"
+            - "§7Click to ban for inappropriate build"
+          duration: "7d"
+          command: "ban %player% %duration% Inappropriate Build"
+
+    mutes:
+      name: "§e§lMutes"
+      icon: PAPER
+      slot: 13
+      punishments:
+        spam:
+          name: "§e§lSpam"
+          icon: PAPER
+          lore:
+            - "§7Duration: §f1 hour"
+            - "§7Click to mute for spam"
+          duration: "1h"
+          command: "mute %player% %duration% Spam"
+        toxicity:
+          name: "§e§lToxicity"
+          icon: POISONOUS_POTATO
+          lore:
+            - "§7Duration: §f12 hours"
+            - "§7Click to mute for toxicity"
+          duration: "12h"
+          command: "mute %player% %duration% Toxicity"
+        advertising:
+          name: "§e§lAdvertising"
+          icon: SIGN
+          lore:
+            - "§7Duration: §f24 hours"
+            - "§7Click to mute for advertising"
+          duration: "24h"
+          command: "mute %player% %duration% Advertising"
+
+    kicks:
+      name: "§6§lKicks"
+      icon: LEATHER_BOOTS
+      slot: 15
+      punishments:
+        spam:
+          name: "§6§lSpam"
+          icon: PAPER
+          lore:
+            - "§7Click to kick for spam"
+          command: "kick %player% Spam"
+        language:
+          name: "§6§lLanguage"
+          icon: BOOK
+          lore:
+            - "§7Click to kick for language"
+          command: "kick %player% Inappropriate Language"
+
+    warns:
+      name: "§a§lWarns"
+      icon: BOOK
+      slot: 16
+      punishments:
+        language:
+          name: "§a§lLanguage"
+          icon: BOOK
+          lore:
+            - "§7Click to warn for language"
+          command: "warn %player% Inappropriate Language"
+        minimodding:
+          name: "§a§lMini-Modding"
+          icon: WOODEN_SWORD
+          lore:
+            - "§7Click to warn for mini-modding"
+          command: "warn %player% Mini-Modding"
+        behavior:
+          name: "§a§lBehavior"
+          icon: GOLDEN_APPLE
+          lore:
+            - "§7Click to warn for behavior"
+          command: "warn %player% Inappropriate Behavior"
