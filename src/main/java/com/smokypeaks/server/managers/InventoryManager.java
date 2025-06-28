@@ -24,7 +24,19 @@ public class InventoryManager {
 
     public void openInventory(Player staff, Player target) {
         inventoryViewers.put(staff.getUniqueId(), target.getUniqueId());
-        staff.openInventory(target.getInventory());
+
+        // Create a copy of the inventory with a valid size
+        Inventory copy = Bukkit.createInventory(null, 36, "§8" + target.getName() + "'s Inventory");
+
+        // Copy main inventory contents (36 slots)
+        ItemStack[] contents = target.getInventory().getContents();
+        for (int i = 0; i < Math.min(36, contents.length); i++) {
+            if (contents[i] != null) {
+                copy.setItem(i, contents[i].clone());
+            }
+        }
+
+        staff.openInventory(copy);
     }
 
     public void openEnderChest(Player staff, Player target) {

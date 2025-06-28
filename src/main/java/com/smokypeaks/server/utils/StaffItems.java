@@ -18,6 +18,14 @@ public class StaffItems {
         );
     }
 
+    public static ItemStack createSpectatorItem(boolean spectator) {
+        return createItem(
+                spectator ? Material.ENDER_EYE : Material.ENDER_PEARL,
+                "§5Spectator Mode: " + (spectator ? "§aEnabled" : "§cDisabled"),
+                "§7Click to toggle between spectator and survival"
+        );
+    }
+
     public static ItemStack createFreezeItem() {
         return createItem(
                 Material.PACKED_ICE,
@@ -79,6 +87,10 @@ public class StaffItems {
     // Add identification methods
     public static boolean isVanishTool(ItemStack item) {
         return isTool(item, "Vanish:");
+    }
+
+    public static boolean isSpectatorTool(ItemStack item) {
+        return isTool(item, "Spectator Mode:");
     }
 
     public static boolean isFreezeTool(ItemStack item) {

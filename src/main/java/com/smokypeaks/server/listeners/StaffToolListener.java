@@ -18,6 +18,8 @@ import org.bukkit.inventory.ItemStack;
 
 public class StaffToolListener implements Listener {
     private final Main plugin;
+    private final java.util.Map<java.util.UUID, Long> lastActionTime = new java.util.HashMap<>();
+    private static final long TOGGLE_COOLDOWN_MS = 500; // 500ms cooldown between any staff actions
 
     public StaffToolListener(Main plugin) {
         this.plugin = plugin;
@@ -57,22 +59,41 @@ public class StaffToolListener implements Listener {
             // Vanish Toggle
             if (StaffItems.isVanishTool(item)) {
                 event.setCancelled(true);
-                plugin.getStaffModeManager().toggleVanish(player);
+
+                // Check cooldown to prevent double-toggling
+                if (checkAndUpdateCooldown(player)) {
+                    plugin.getStaffModeManager().toggleVanish(player);
+                }
+            }
+            // Spectator Mode Toggle
+            else if (StaffItems.isSpectatorTool(item)) {
+                event.setCancelled(true);
+
+                // Check cooldown to prevent double-toggling
+                if (checkAndUpdateCooldown(player)) {
+                    plugin.getStaffModeManager().toggleSpectatorMode(player);
+                }
             }
             // Random Teleport
             else if (StaffItems.isRandomTpTool(item)) {
                 event.setCancelled(true);
-                plugin.getTeleportManager().teleportToRandomPlayer(player);
+                if (checkAndUpdateCooldown(player)) {
+                    plugin.getTeleportManager().teleportToRandomPlayer(player);
+                }
             }
             // Staff List
             else if (StaffItems.isStaffListTool(item)) {
                 event.setCancelled(true);
-                showOnlineStaff(player);
+                if (checkAndUpdateCooldown(player)) {
+                    showOnlineStaff(player);
+                }
             }
             // Punishment Menu
             else if (StaffItems.isPunishmentTool(item)) {
                 event.setCancelled(true);
-                openPunishmentMenu(player);
+                if (checkAndUpdateCooldown(player)) {
+                    openPunishmentMenu(player);
+                }
             }
         }
     }
@@ -88,22 +109,35 @@ public class StaffToolListener implements Listener {
         // Freeze Player
         if (StaffItems.isFreezeTool(item)) {
             event.setCancelled(true);
-            plugin.getFreezeManager().toggleFreeze(target, player);
+            if (checkAndUpdateCooldown(player)) {
+                plugin.getFreezeManager().toggleFreeze(target, player);
+            }
         }
         // Inventory Inspection
         else if (StaffItems.isInvseeTool(item)) {
             event.setCancelled(true);
-            plugin.getInventoryManager().openInventory(player, target);
+            if (checkAndUpdateCooldown(player)) {
+                try {
+                    plugin.getInventoryManager().openInventory(player, target);
+                } catch (Exception e) {
+                    player.sendMessage("§c[Staff] §eError opening inventory: " + e.getMessage());
+                    plugin.getLogger().warning("Error opening inventory: " + e.getMessage());
+                }
+            }
         }
         // Enderchest Inspection
         else if (StaffItems.isEnderseeTool(item)) {
             event.setCancelled(true);
-            plugin.getInventoryManager().openEnderChest(player, target);
+            if (checkAndUpdateCooldown(player)) {
+                plugin.getInventoryManager().openEnderChest(player, target);
+            }
         }
         // Target for punishment
         else if (StaffItems.isPunishmentTool(item)) {
             event.setCancelled(true);
-            openPunishmentMenu(player, target);
+            if (checkAndUpdateCooldown(player)) {
+                openPunishmentMenu(player, target);
+            }
         }
     }
 
@@ -128,12 +162,36 @@ public class StaffToolListener implements Listener {
     }
 
     private void openPunishmentMenu(Player staff) {
-        // Open punishment menu without target
-        plugin.getPunishmentManager().openMenu(staff, null);
+        // Instead of passing null, we'll show a list of online players
+        staff.sendMessage("§6[Staff] §ePlease use §f/punish <player> §eto open the punishment menu.");
+        staff.sendMessage("§6[Staff] §eOnline players:");
+
+        for (Player online : plugin.getServer().getOnlinePlayers()) {
+            if (!online.equals(staff)) {
+                staff.sendMessage("§7- §f" + online.getName());
+            }
+        }
     }
 
     private void openPunishmentMenu(Player staff, Player target) {
         // Open punishment menu with target
         plugin.getPunishmentManager().openMenu(staff, target);
+    }
+
+    /**
+     * Check if enough time has passed since the last action and update the timestamp
+     * @param player The player to check cooldown for
+     * @return true if action should proceed, false if on cooldown
+     */
+    private boolean checkAndUpdateCooldown(Player player) {
+        long currentTime = System.currentTimeMillis();
+        java.util.UUID playerUUID = player.getUniqueId();
+        Long lastAction = lastActionTime.getOrDefault(playerUUID, 0L);
+
+        if (currentTime - lastAction >= TOGGLE_COOLDOWN_MS) {
+            lastActionTime.put(playerUUID, currentTime);
+            return true;
+        }
+        return false;
     }
 }

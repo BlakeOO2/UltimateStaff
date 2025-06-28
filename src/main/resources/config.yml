@@ -92,105 +92,230 @@ mining-alerts:
       pitch: 1.0
 
 punishments:
-  categories:
-    bans:
-      name: "§c§lBans"
-      icon: DIAMOND_SWORD
-      slot: 11
-      punishments:
-        hacking:
-          name: "§c§lHacking"
-          icon: DIAMOND_SWORD
+  respect_and_chat:
+    name: "Respect & Chat"
+    icon: BOOK
+    slot: 10
+    violations:
+      harassment:
+        name: "Harassment / Disrespect"
+        item:
+          material: RED_WOOL
+          name: "&c&lHarassment / Disrespect"
           lore:
-            - "§7Duration: §f30 days"
-            - "§7Click to ban for hacking"
-          duration: "30d"
-          command: "ban %player% %duration% Hacking/Cheating"
-        griefing:
-          name: "§c§lGriefing"
-          icon: TNT
-          lore:
-            - "§7Duration: §f14 days"
-            - "§7Click to ban for griefing"
-          duration: "14d"
-          command: "ban %player% %duration% Griefing"
-        inappropriate_build:
-          name: "§c§lInappropriate Build"
-          icon: BRICK
-          lore:
-            - "§7Duration: §f7 days"
-            - "§7Click to ban for inappropriate build"
-          duration: "7d"
-          command: "ban %player% %duration% Inappropriate Build"
+            - "&7Progression:"
+            - "&7→ Warning"
+            - "&7→ 24h Ban"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "Warning"
+            command: "warn %player% Harassment/Disrespect"
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Harassment/Disrespect"
+          - name: "Permanent Ban"
+            command: "ban %player% Harassment/Disrespect"
 
-    mutes:
-      name: "§e§lMutes"
-      icon: PAPER
-      slot: 13
-      punishments:
-        spam:
-          name: "§e§lSpam"
-          icon: PAPER
+      chat_abuse:
+        name: "Chat Abuse / Spam"
+        item:
+          material: ORANGE_WOOL
+          name: "&c&lChat Abuse / Spam"
           lore:
-            - "§7Duration: §f1 hour"
-            - "§7Click to mute for spam"
-          duration: "1h"
-          command: "mute %player% %duration% Spam"
-        toxicity:
-          name: "§e§lToxicity"
-          icon: POISONOUS_POTATO
-          lore:
-            - "§7Duration: §f12 hours"
-            - "§7Click to mute for toxicity"
-          duration: "12h"
-          command: "mute %player% %duration% Toxicity"
-        advertising:
-          name: "§e§lAdvertising"
-          icon: SIGN
-          lore:
-            - "§7Duration: §f24 hours"
-            - "§7Click to mute for advertising"
-          duration: "24h"
-          command: "mute %player% %duration% Advertising"
+            - "&7Progression:"
+            - "&7→ Warning"
+            - "&7→ 1h Mute"
+            - "&7→ 24h Mute"
+            - "&7→ Permanent Mute"
+        actions:
+          - name: "Warning"
+            command: "warn %player% Chat Abuse/Spam"
+          - name: "1h Mute"
+            duration: "1h"
+            command: "tempmute %player% %duration% Chat Abuse/Spam"
+          - name: "24h Mute"
+            duration: "24h"
+            command: "tempmute %player% %duration% Chat Abuse/Spam"
+          - name: "Permanent Mute"
+            command: "mute %player% Chat Abuse/Spam"
 
-    kicks:
-      name: "§6§lKicks"
-      icon: LEATHER_BOOTS
-      slot: 15
-      punishments:
-        spam:
-          name: "§6§lSpam"
-          icon: PAPER
+      threats:
+        name: "Threats"
+        item:
+          material: BLACK_WOOL
+          name: "&4&lThreats"
           lore:
-            - "§7Click to kick for spam"
-          command: "kick %player% Spam"
-        language:
-          name: "§6§lLanguage"
-          icon: BOOK
-          lore:
-            - "§7Click to kick for language"
-          command: "kick %player% Inappropriate Language"
+            - "&7Immediate action:"
+            - "&7→ Permanent Ban"
+            - "&7→ Blacklist"
+        actions:
+          - name: "Permanent Ban"
+            command: "ban %player% Threats (Doxing/DDoS/Malicious Links)"
 
-    warns:
-      name: "§a§lWarns"
-      icon: BOOK
-      slot: 16
-      punishments:
-        language:
-          name: "§a§lLanguage"
-          icon: BOOK
+      impersonation:
+        name: "Impersonation"
+        item:
+          material: PLAYER_HEAD
+          name: "&c&lImpersonation"
           lore:
-            - "§7Click to warn for language"
-          command: "warn %player% Inappropriate Language"
-        minimodding:
-          name: "§a§lMini-Modding"
-          icon: WOODEN_SWORD
+            - "&7Progression:"
+            - "&7→ Warning"
+            - "&7→ 24h Ban"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "Warning"
+            command: "warn %player% Impersonation of Staff/Players"
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Impersonation"
+          - name: "Permanent Ban"
+            command: "ban %player% Impersonation"
+
+  gameplay:
+    name: "Gameplay Violations"
+    icon: DIAMOND_SWORD
+    slot: 12
+    violations:
+      unfair_advantage:
+        name: "Unfair Advantage"
+        item:
+          material: COMMAND_BLOCK
+          name: "&c&lUnfair Advantage"
           lore:
-            - "§7Click to warn for mini-modding"
-          command: "warn %player% Mini-Modding"
-        behavior:
-          name: "§a§lBehavior"
-          icon: GOLDEN_APPLE
+            - "&7Progression:"
+            - "&7→ 24h Ban"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Using unfair mods/macros/scripts"
+          - name: "Permanent Ban"
+            command: "ban %player% Using unfair mods/macros/scripts"
+
+      cheating:
+        name: "Cheating"
+        item:
+          material: BARRIER
+          name: "&4&lCheating"
           lore:
-            - "§7Click to warn for behavior"
-          command: "warn %player% Inappropriate Behavior"
+            - "&7Immediate action:"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "Permanent Ban"
+            command: "ban %player% Cheating (X-Ray/Freecam/Hacks)"
+
+      pvp_violations:
+        name: "Non-Consensual PvP"
+        item:
+          material: IRON_SWORD
+          name: "&c&lNon-Consensual PvP"
+          lore:
+            - "&7Progression:"
+            - "&7→ Warning"
+            - "&7→ 24h Ban"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "Warning"
+            command: "warn %player% Non-Consensual PvP"
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Non-Consensual PvP"
+          - name: "Permanent Ban"
+            command: "ban %player% Repeated Non-Consensual PvP"
+
+  building:
+    name: "Building Violations"
+    icon: BRICKS
+    slot: 14
+    violations:
+      griefing:
+        name: "Griefing"
+        item:
+          material: TNT
+          name: "&c&lGriefing"
+          lore:
+            - "&7Progression:"
+            - "&7→ 24h Ban"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Griefing"
+          - name: "Permanent Ban"
+            command: "ban %player% Griefing"
+
+      building_violations:
+        name: "Building Violations"
+        item:
+          material: WOODEN_AXE
+          name: "&c&lBuilding Violations"
+          lore:
+            - "&7Progression:"
+            - "&7→ Warning"
+            - "&7→ 24h Ban"
+        actions:
+          - name: "Warning"
+            command: "warn %player% Building violation"
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Repeated building violations"
+
+  economy:
+    name: "Economy Violations"
+    icon: GOLD_INGOT
+    slot: 16
+    violations:
+      scamming:
+        name: "Scamming"
+        item:
+          material: CHEST
+          name: "&c&lScamming"
+          lore:
+            - "&7Progression:"
+            - "&7→ Warning"
+            - "&7→ 24h Ban"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "Warning"
+            command: "warn %player% Scamming"
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Scamming"
+          - name: "Permanent Ban"
+            command: "ban %player% Repeated scamming"
+
+      irl_trading:
+        name: "IRL Trading"
+        item:
+          material: EMERALD
+          name: "&4&lIRL Trading"
+          lore:
+            - "&7Immediate action:"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "Permanent Ban"
+            command: "ban %player% IRL Trading"
+
+  inappropriate:
+    name: "Inappropriate Content"
+    icon: WRITABLE_BOOK
+    slot: 28
+    violations:
+      inappropriate_content:
+        name: "Inappropriate Content"
+        item:
+          material: PAPER
+          name: "&c&lInappropriate Content"
+          lore:
+            - "&7Progression:"
+            - "&7→ Warning"
+            - "&7→ 24h Ban"
+            - "&7→ Permanent Ban"
+        actions:
+          - name: "Warning"
+            command: "warn %player% Inappropriate content"
+          - name: "24h Ban"
+            duration: "24h"
+            command: "tempban %player% %duration% Inappropriate content"
+          - name: "Permanent Ban"
+            command: "ban %player% Repeated inappropriate content"

@@ -17,6 +17,7 @@ public class StaffModeManager {
     private final Main plugin;
     private final HashSet<UUID> staffMode = new HashSet<>();
     private final HashSet<UUID> vanished = new HashSet<>();
+    private final HashSet<UUID> spectatorMode = new HashSet<>();
     private final Map<UUID, ItemStack[]> savedInventories = new HashMap<>();
     private final Map<UUID, ItemStack[]> savedArmor = new HashMap<>();
     private final Map<UUID, GameMode> savedGameModes = new HashMap<>();
@@ -35,6 +36,14 @@ public class StaffModeManager {
     }
     public void toggleVanish(Player player) {
         setVanished(player, !isVanished(player));
+    }
+
+    public void toggleSpectatorMode(Player player) {
+        if (isInSpectatorMode(player)) {
+            setSpectatorMode(player, false);
+        } else {
+            setSpectatorMode(player, true);
+        }
     }
 
     public void enableStaffMode(Player player) {
@@ -107,6 +116,7 @@ public class StaffModeManager {
         player.getInventory().setItem(2, StaffItems.createInvseeItem());
         player.getInventory().setItem(3, StaffItems.createEnderChestItem());
         player.getInventory().setItem(4, StaffItems.createRandomTpItem());
+        player.getInventory().setItem(5, StaffItems.createSpectatorItem(isInSpectatorMode(player)));
         player.getInventory().setItem(8, StaffItems.createStaffListItem());
         player.getInventory().setItem(7, StaffItems.createPunishmentTool());
 
@@ -145,6 +155,33 @@ public class StaffModeManager {
         return vanished.contains(player.getUniqueId());
     }
 
+    public boolean isInSpectatorMode(Player player) {
+        return spectatorMode.contains(player.getUniqueId());
+    }
+
+    public void setSpectatorMode(Player player, boolean spectator) {
+        if (spectator) {
+            // Check permission
+            if (!player.hasPermission(StaffPermissions.Staff.SPECTATOR)) {
+                player.sendMessage("§cYou don't have permission to use spectator mode!");
+                return;
+            }
+            spectatorMode.add(player.getUniqueId());
+            player.setGameMode(GameMode.SPECTATOR);
+            player.sendMessage("§6[Staff] §eSpectator mode enabled");
+        } else {
+            spectatorMode.remove(player.getUniqueId());
+            player.setGameMode(GameMode.SURVIVAL);
+            player.sendMessage("§6[Staff] §eSpectator mode disabled");
+        }
+
+        // Update spectator item if in staff mode
+        if (isInStaffMode(player)) {
+            player.getInventory().setItem(5, StaffItems.createSpectatorItem(spectator));
+            player.updateInventory();
+        }
+    }
+
     public void cleanup() {
         // Disable staff mode for all online players
         for (UUID uuid : new HashSet<>(staffMode)) {
@@ -157,6 +194,7 @@ public class StaffModeManager {
         // Clear all sets and maps
         staffMode.clear();
         vanished.clear();
+        spectatorMode.clear();
         savedInventories.clear();
         savedArmor.clear();
         savedGameModes.clear();

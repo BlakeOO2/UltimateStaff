@@ -1,192 +1,386 @@
-// com.smokypeaks.server.managers.PunishmentManager.java
 package com.smokypeaks.server.managers;
 
 import com.smokypeaks.Main;
-import com.smokypeaks.global.permissions.StaffPermissions;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandExecutor;
-import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.*;
 
 public class PunishmentManager {
     private final Main plugin;
-    private final Map<String, PunishmentCategory> categories;
+    private final Map<String, Category> categories;
+    private final Map<UUID, MenuSession> activeSessions;
+    private final Map<String, PendingPunishment> pendingPunishments;
     private final Map<String, String> activeMenus;
-    private final Map<String, PendingPunishment> pendingPunishments = new HashMap<>();
 
+    // Default inventory sizes
+    private static final int DEFAULT_CATEGORY_SIZE = 27; // 3 rows
+    private static final int DEFAULT_VIOLATION_SIZE = 36; // 4 rows
+    private static final int DEFAULT_ACTION_SIZE = 36;    // 4 rows
+    private static final int CONFIRM_MENU_SIZE = 27;       // 3 rows
 
     public PunishmentManager(Main plugin) {
         this.plugin = plugin;
         this.categories = new HashMap<>();
+        this.activeSessions = new HashMap<>();
+        this.pendingPunishments = new HashMap<>();
         this.activeMenus = new HashMap<>();
         loadPunishments();
     }
-    private record PendingPunishment(String category, String actionName, String targetName, String command) {}
 
+    // Track session state for each player using punishment menus
+    private static class MenuSession {
+        private final UUID targetUUID;
+        private final String targetName;
+        private String currentCategory;
+        private String currentViolation;
 
-    public void loadPunishments() {
-        ConfigurationSection config = plugin.getConfig().getConfigurationSection("punishments");
-        if (config == null) return;
+        public MenuSession(Player target) {
+            this.targetUUID = target.getUniqueId();
+            this.targetName = target.getName();
+        }
 
-        for (String categoryName : config.getKeys(false)) {
-            ConfigurationSection categorySection = config.getConfigurationSection(categoryName);
-            if (categorySection == null) continue;
+        public UUID getTargetUUID() {
+            return targetUUID;
+        }
 
-            List<PunishmentAction> actions = new ArrayList<>();
-            for (String key : categorySection.getKeys(false)) {
-                ConfigurationSection actionSection = categorySection.getConfigurationSection(key);
-                if (actionSection == null) continue;
+        public String getTargetName() {
+            return targetName;
+        }
 
-                actions.add(new PunishmentAction(
-                        actionSection.getString("name"),
-                        actionSection.getString("duration", ""),
-                        actionSection.getString("command"),
-                        createItemFromConfig(actionSection.getConfigurationSection("item"))
-                ));
-            }
-            categories.put(categoryName, new PunishmentCategory(categoryName, actions));
+        public String getCurrentCategory() {
+            return currentCategory;
+        }
+
+        public void setCurrentCategory(String category) {
+            this.currentCategory = category;
+        }
+
+        public String getCurrentViolation() {
+            return currentViolation;
+        }
+
+        public void setCurrentViolation(String violation) {
+            this.currentViolation = violation;
         }
     }
 
-    public void openMenu(Player staff, Player target) {
-        Inventory menu = Bukkit.createInventory(null, 27, "§c§lPunishment Menu");
+    private record PendingPunishment(String category, String violation, String actionName, String targetName, String command) {}
+    private record Category(String name, Material icon, int slot, Map<String, Violation> violations) {}
+    private record Violation(String name, ItemStack item, List<PunishmentAction> actions) {}
+    private record PunishmentAction(String name, String duration, String command, ItemStack item) {}
 
-        // Load categories from config
-        ConfigurationSection categories = plugin.getConfig().getConfigurationSection("punishments.categories");
-        if (categories != null) {
-            for (String key : categories.getKeys(false)) {
-                ConfigurationSection category = categories.getConfigurationSection(key);
-                if (category == null) continue;
-
-                ItemStack icon = createCategoryIcon(category);
-                int slot = category.getInt("slot", 0);
-                menu.setItem(slot, icon);
+    public void loadPunishments() {
+        try {
+            categories.clear();
+            ConfigurationSection config = plugin.getConfig().getConfigurationSection("punishments");
+            if (config == null) {
+                plugin.getLogger().warning("No 'punishments' section found in config.yml");
+                return;
             }
+
+            for (String categoryKey : config.getKeys(false)) {
+                ConfigurationSection categorySection = config.getConfigurationSection(categoryKey);
+                if (categorySection == null) continue;
+
+                String categoryName = categorySection.getString("name", categoryKey);
+                Material icon;
+                try {
+                    String iconStr = categorySection.getString("icon", "PAPER");
+                    icon = Material.valueOf(iconStr.toUpperCase());
+                } catch (IllegalArgumentException e) {
+                    plugin.getLogger().warning("Invalid material for category " + categoryKey + ": " + e.getMessage());
+                    icon = Material.PAPER;
+                }
+
+                int slot = categorySection.getInt("slot", -1);
+
+                Map<String, Violation> violations = new HashMap<>();
+                ConfigurationSection violationsSection = categorySection.getConfigurationSection("violations");
+
+                if (violationsSection != null) {
+                    for (String violationKey : violationsSection.getKeys(false)) {
+                        ConfigurationSection violationSection = violationsSection.getConfigurationSection(violationKey);
+                        if (violationSection == null) continue;
+
+                        String violationName = violationSection.getString("name", violationKey);
+                        ItemStack violationItem = createItemFromConfig(violationSection.getConfigurationSection("item"));
+                        List<PunishmentAction> actions = loadActions(violationSection.getConfigurationSection("actions"));
+
+                        violations.put(violationKey, new Violation(violationName, violationItem, actions));
+                    }
+                }
+
+                categories.put(categoryKey, new Category(categoryName, icon, slot, violations));
+                plugin.getLogger().info("Loaded punishment category: " + categoryName + " with " + violations.size() + " violations");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error loading punishments: " + e.getMessage());
+            e.printStackTrace();
+        }
+    }
+
+    private List<PunishmentAction> loadActions(ConfigurationSection actionsSection) {
+        List<PunishmentAction> actions = new ArrayList<>();
+        if (actionsSection == null) return actions;
+
+        try {
+            for (String key : actionsSection.getKeys(false)) {
+                String name = actionsSection.getString(key + ".name", "Unknown");
+                String duration = actionsSection.getString(key + ".duration", "");
+                String command = actionsSection.getString(key + ".command", "");
+
+                Material material = Material.PAPER;
+                try {
+                    String materialStr = actionsSection.getString(key + ".item.material");
+                    if (materialStr != null) {
+                        material = Material.valueOf(materialStr.toUpperCase());
+                    }
+                } catch (IllegalArgumentException e) {
+                    // Fallback to default
+                }
+
+                ItemStack item = new ItemStack(material);
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) {
+                    meta.setDisplayName("§e§l" + name);
+                    List<String> lore = new ArrayList<>();
+                    if (!duration.isEmpty()) {
+                        lore.add("§7Duration: §f" + duration);
+                    }
+                    lore.add("§7Click to execute");
+                    meta.setLore(lore);
+                    item.setItemMeta(meta);
+                }
+
+                actions.add(new PunishmentAction(name, duration, command, item));
+            }
+        } catch (Exception e) {
+            plugin.getLogger().warning("Error loading punishment actions: " + e.getMessage());
         }
 
-        if (target != null) {
-            ItemStack targetInfo = createTargetInfo(target);
-            menu.setItem(4, targetInfo);
+        return actions;
+    }
+
+                /**
+                 * Opens the main punishment menu for a staff member to punish a target player
+                 * @param staff The staff member using the punishment system
+                 * @param target The player to be potentially punished
+                 */
+                public void openMenu(Player staff, Player target) {
+        try {
+            if (target == null) {
+                staff.sendMessage("§cError: Target player is null");
+                return;
+            }
+
+            // Create a new session for this staff member
+            activeSessions.put(staff.getUniqueId(), new MenuSession(target));
+
+            // Calculate inventory size - min 3 rows, max 6 rows
+            int itemCount = categories.size();
+            int rows = Math.max(3, Math.min(6, (int) Math.ceil(itemCount / 7.0) + 1)); // +1 for padding/navigation
+            int size = rows * 9;
+
+            // Create inventory
+            Inventory menu = Bukkit.createInventory(null, size, "§c§lPunishment Menu - " + target.getName());
+
+            // First, add the target player head in the center top row
+            ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
+            ItemMeta meta = playerHead.getItemMeta();
+            if (meta instanceof SkullMeta skullMeta) {
+                skullMeta.setOwningPlayer(target);
+            }
+            meta.setDisplayName("§f" + target.getName());
+            List<String> lore = new ArrayList<>();
+            lore.add("§7Select a punishment category below");
+            meta.setLore(lore);
+            playerHead.setItemMeta(meta);
+            menu.setItem(4, playerHead);
+
+            // Add category buttons
+            for (Map.Entry<String, Category> entry : categories.entrySet()) {
+                String key = entry.getKey();
+                Category category = entry.getValue();
+
+                ItemStack item = new ItemStack(category.icon);
+                ItemMeta itemMeta = item.getItemMeta();
+                if (itemMeta != null) {
+                    itemMeta.setDisplayName("§6§l" + category.name);
+                    List<String> itemLore = new ArrayList<>();
+                    itemLore.add("§7Click to view violations");
+                    itemLore.add("§8Category: " + key); // Store category key for retrieval
+                    itemMeta.setLore(itemLore);
+                    item.setItemMeta(itemMeta);
+                }
+
+                // Calculate positions - place items in middle rows starting from slot 18
+                int slot;
+                if (category.slot >= 0 && category.slot < size && !isReservedSlot(category.slot)) {
+                    slot = category.slot;
+                } else {
+                    // Find next available slot starting from middle rows
+                    slot = findNextAvailableSlot(menu, 18);
+                }
+
+                if (slot < size) {
+                    menu.setItem(slot, item);
+                } else {
+                    plugin.getLogger().warning("Not enough space in menu for category: " + category.name);
+                }
+            }
+
             activeMenus.put(staff.getUniqueId().toString(), target.getName());
+            staff.openInventory(menu);
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error opening punishment menu: " + e.getMessage());
+            e.printStackTrace();
+            staff.sendMessage("§cAn error occurred while opening the menu");
         }
+    }
+
+    public void openCategory(Player staff, String categoryKey) {
+        Category category = categories.get(categoryKey);
+        if (category == null) {
+            staff.sendMessage("§cCategory not found!");
+            return;
+        }
+
+        String targetName = activeMenus.get(staff.getUniqueId().toString());
+        if (targetName == null) {
+            staff.sendMessage("§cNo target selected!");
+            return;
+        }
+
+        Player target = Bukkit.getPlayer(targetName);
+        if (target == null) {
+            staff.sendMessage("§cTarget player is offline!");
+            activeMenus.remove(staff.getUniqueId().toString());
+            return;
+        }
+
+        int rows = (int) Math.ceil(category.violations.size() / 9.0) + 1;
+        int size = Math.min(6, rows) * 9;
+        Inventory menu = Bukkit.createInventory(null, size, 
+            "§c§l" + category.name + " - " + targetName);
+
+        // Add violation buttons
+        category.violations.forEach((key, violation) -> {
+            int slot = menu.firstEmpty();
+            if (slot >= 0 && slot < size - 9) { // Leave bottom row for navigation
+                menu.setItem(slot, violation.item);
+            }
+        });
+
+        // Add back button
+        ItemStack backButton = createButton(Material.BARRIER, "§c§lBack", "§7Return to main menu");
+        menu.setItem(size - 5, backButton);
 
         staff.openInventory(menu);
     }
 
+    public void openViolation(Player staff, String categoryKey, String violationKey) {
+        Category category = categories.get(categoryKey);
+        if (category == null) {
+            staff.sendMessage("§cCategory not found!");
+            return;
+        }
 
+        Violation violation = category.violations.get(violationKey);
+        if (violation == null) {
+            staff.sendMessage("§cViolation not found!");
+            return;
+        }
 
-    private ItemStack createCategoryIcon(ConfigurationSection category) {
-        Material material = Material.valueOf(category.getString("icon", "STONE").toUpperCase());
-        String name = category.getString("name", "Unknown");
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Click to view " + name.toLowerCase() + " options");
+        String targetName = activeMenus.get(staff.getUniqueId().toString());
+        if (targetName == null) {
+            staff.sendMessage("§cNo target selected!");
+            return;
+        }
 
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName(name);
-        meta.setLore(lore);
-        item.setItemMeta(meta);
-        return item;
+        // Check if target is still online
+        Player target = Bukkit.getPlayer(targetName);
+        if (target == null) {
+            staff.sendMessage("§cTarget player is offline!");
+            activeMenus.remove(staff.getUniqueId().toString());
+            return;
+        }
+
+        int rows = (int) Math.ceil(violation.actions.size() / 9.0) + 1;
+        int size = Math.min(6, rows) * 9;
+        Inventory menu = Bukkit.createInventory(null, size, 
+            "§c§l" + violation.name + " - " + targetName);
+
+        // Add action buttons
+        for (int i = 0; i < violation.actions.size(); i++) {
+            if (i >= 0 && i < size - 9) { // Leave bottom row for navigation
+                menu.setItem(i, violation.actions.get(i).item);
+            }
+        }
+
+        // Add back button
+        ItemStack backButton = createButton(Material.BARRIER, "§c§lBack", "§7Return to category");
+        menu.setItem(size - 5, backButton);
+
+        staff.openInventory(menu);
+
     }
 
-    private ItemStack createTargetInfo(Player target) {
-        ItemStack item = new ItemStack(Material.PLAYER_HEAD);
-        ItemMeta meta = item.getItemMeta();
-        meta.setDisplayName("§e§lTarget: §f" + target.getName());
-        List<String> lore = new ArrayList<>();
-        lore.add("§7Click a category to");
-        lore.add("§7punish this player");
-        meta.setLore(lore);
-        item.setItemMeta(meta);
-        return item;
-    }
+    public void executePunishment(Player staff, String categoryKey, String violationKey, String actionName) {
+        Category category = categories.get(categoryKey);
+        if (category == null) return;
 
-    private ItemStack createItemFromConfig(ConfigurationSection config) {
-        if (config == null) return new ItemStack(Material.STONE);
-
-        Material material = Material.valueOf(config.getString("material", "STONE").toUpperCase());
-        ItemStack item = new ItemStack(material);
-        ItemMeta meta = item.getItemMeta();
-
-        meta.setDisplayName(config.getString("name", "").replace("&", "§"));
-
-        List<String> lore = config.getStringList("lore");
-        meta.setLore(lore.stream().map(s -> s.replace("&", "§")).toList());
-
-        item.setItemMeta(meta);
-        return item;
-    }
-
-    public void executePunishment(Player staff, String category, String actionName) {
-        PunishmentCategory cat = categories.get(category.toLowerCase());
-        if (cat == null) return;
+        Violation violation = category.violations.get(violationKey);
+        if (violation == null) return;
 
         String targetName = activeMenus.get(staff.getUniqueId().toString());
         if (targetName == null) return;
 
-        for (PunishmentAction action : cat.actions) {
+        for (PunishmentAction action : violation.actions) {
             if (action.name.equalsIgnoreCase(actionName)) {
                 String command = action.command
-                        .replace("%player%", targetName)
-                        .replace("%duration%", action.duration)
-                        .replace("%reason%", action.name);
+                    .replace("%player%", targetName)
+                    .replace("%duration%", action.duration);
 
-                // Open confirmation menu instead of executing directly
-                openConfirmationMenu(staff, category, actionName, targetName, command);
+                openConfirmationMenu(staff, categoryKey, violationKey, actionName, targetName, command);
                 break;
             }
         }
     }
 
-    public void openConfirmationMenu(Player staff, String category, String actionName, String targetName, String command) {
+    public void openConfirmationMenu(Player staff, String category, String violation, 
+                                   String actionName, String targetName, String command) {
         Inventory menu = Bukkit.createInventory(null, 27, "§c§lConfirm Punishment");
 
         // Target info
-        ItemStack targetInfo = new ItemStack(Material.PLAYER_HEAD);
-        ItemMeta targetMeta = targetInfo.getItemMeta();
-        targetMeta.setDisplayName("§e§lTarget: §f" + targetName);
-        targetInfo.setItemMeta(targetMeta);
+        ItemStack targetInfo = createButton(Material.PLAYER_HEAD, 
+            "§e§lTarget: §f" + targetName, "§7Will be punished");
         menu.setItem(4, targetInfo);
 
         // Punishment info
-        ItemStack punishmentInfo = new ItemStack(Material.PAPER);
-        ItemMeta punishMeta = punishmentInfo.getItemMeta();
-        punishMeta.setDisplayName("§6§lPunishment Details");
-        List<String> punishLore = new ArrayList<>();
-        punishLore.add("§7Category: §f" + category);
-        punishLore.add("§7Action: §f" + actionName);
-        punishLore.add("§7Command: §f" + command);
-        punishMeta.setLore(punishLore);
-        punishmentInfo.setItemMeta(punishMeta);
+        ItemStack punishmentInfo = createButton(Material.PAPER, "§6§lPunishment Details",
+            "§7Category: §f" + category,
+            "§7Violation: §f" + violation,
+            "§7Action: §f" + actionName,
+            "§7Command: §f" + command);
         menu.setItem(13, punishmentInfo);
 
         // Confirm button
-        ItemStack confirm = new ItemStack(Material.LIME_DYE);
-        ItemMeta confirmMeta = confirm.getItemMeta();
-        confirmMeta.setDisplayName("§a§lConfirm");
-        confirmMeta.setLore(Arrays.asList("§7Click to confirm punishment"));
-        confirm.setItemMeta(confirmMeta);
+        ItemStack confirm = createButton(Material.LIME_DYE, "§a§lConfirm", "§7Click to execute punishment");
         menu.setItem(11, confirm);
 
         // Cancel button
-        ItemStack cancel = new ItemStack(Material.RED_DYE);
-        ItemMeta cancelMeta = cancel.getItemMeta();
-        cancelMeta.setDisplayName("§c§lCancel");
-        cancelMeta.setLore(Arrays.asList("§7Click to cancel"));
-        cancel.setItemMeta(cancelMeta);
+        ItemStack cancel = createButton(Material.RED_DYE, "§c§lCancel", "§7Click to cancel");
         menu.setItem(15, cancel);
 
-        // Store pending punishment
-        pendingPunishments.put(staff.getUniqueId().toString(),
-                new PendingPunishment(category, actionName, targetName, command));
+                    pendingPunishments.put(staff.getUniqueId().toString(),
+            new PendingPunishment(category, violation, actionName, targetName, command));
 
         staff.openInventory(menu);
     }
@@ -204,8 +398,6 @@ public class PunishmentManager {
             // Execute the punishment
             Bukkit.dispatchCommand(Bukkit.getConsoleSender(), pending.command());
             staff.sendMessage("§6[Staff] §ePunishment executed on §f" + pending.targetName());
-
-            // Log the punishment
             logPunishment(staff, pending);
         } else {
             staff.sendMessage("§6[Staff] §ePunishment cancelled");
@@ -217,50 +409,17 @@ public class PunishmentManager {
 
     private void logPunishment(Player staff, PendingPunishment punishment) {
         String logMessage = String.format(
-                "[Punishment] %s executed %s:%s on %s",
-                staff.getName(),
-                punishment.category(),
-                punishment.actionName(),
-                punishment.targetName()
+            "[Punishment] %s executed %s:%s:%s on %s",
+            staff.getName(),
+            punishment.category(),
+            punishment.violation(),
+            punishment.actionName(),
+            punishment.targetName()
         );
         plugin.getLogger().info(logMessage);
     }
 
-    private record PunishmentCategory(String name, List<PunishmentAction> actions) {}
-
-    private record PunishmentAction(String name, String duration, String command, ItemStack item) {}
-
-    public void reloadPunishments() {
-        categories.clear();
-        loadPunishments();
-    }
-    public void openCategory(Player staff, String category) {
-        // Reload punishments to ensure latest config
-        reloadPunishments();
-
-        PunishmentCategory cat = categories.get(category.toLowerCase());
-        if (cat == null) {
-            staff.sendMessage("§cCategory not found!");
-            return;
-        }
-
-        // Calculate inventory size (multiple of 9)
-        int size = Math.min(54, ((cat.actions.size() + 8) / 9) * 9 + 9);
-        Inventory menu = Bukkit.createInventory(null, size, "§c§l" + category);
-
-        // Add punishment options
-        for (int i = 0; i < cat.actions.size() && i < size - 9; i++) {
-            menu.setItem(i, cat.actions.get(i).item);
-        }
-
-        // Add back button in the bottom row
-        ItemStack backButton = createCategoryButton(Material.BARRIER, "§c§lBack", "§7Return to main menu");
-        menu.setItem(size - 1, backButton);
-
-        // Open the menu for the player
-        staff.openInventory(menu);
-    }
-    private ItemStack createCategoryButton(Material material, String name, String... lore) {
+    private ItemStack createButton(Material material, String name, String... lore) {
         ItemStack item = new ItemStack(material);
         ItemMeta meta = item.getItemMeta();
         meta.setDisplayName(name);
@@ -269,8 +428,55 @@ public class PunishmentManager {
         return item;
     }
 
+            private boolean isReservedSlot(int slot) {
+        // Reserved slots: top row (0-8) for header/info items
+        if (slot < 9) return true;
 
+        // Bottom row reserved for navigation - use inventory size to determine bottom row
+        // We don't know the exact inventory size here, so we'll use a generic approach
+        int inventorySize = 27; // Default size, minimum 3 rows
+        int bottomRowStart = inventorySize - 9;
+        if (slot >= bottomRowStart && slot < inventorySize) return true;
 
-    // Add command to reload punishments
+        // Center slot in top row (slot 4) reserved for player head
+        return slot == 4;
+            }
 
+            private int findNextAvailableSlot(Inventory inventory, int startFrom) {
+        for (int i = startFrom; i < inventory.getSize(); i++) {
+            if (!isReservedSlot(i) && inventory.getItem(i) == null) {
+                return i;
+            }
+        }
+
+        // If we couldn't find a slot in the preferred range, look through the whole inventory
+        for (int i = 0; i < inventory.getSize(); i++) {
+            if (i != 4 && inventory.getItem(i) == null) { // Always keep slot 4 (player head) reserved
+                return i;
+            }
+        }
+
+        // If inventory is completely full, return the first non-critical slot
+        return 9; // First slot in second row
+            }
+
+    private ItemStack createItemFromConfig(ConfigurationSection config) {
+        if (config == null) return new ItemStack(Material.STONE);
+
+        Material material = Material.valueOf(config.getString("material", "STONE").toUpperCase());
+        ItemStack item = new ItemStack(material);
+        ItemMeta meta = item.getItemMeta();
+
+        meta.setDisplayName(config.getString("name", "").replace("&", "§"));
+
+        List<String> lore = config.getStringList("lore");
+        meta.setLore(lore.stream().map(s -> s.replace("&", "§")).toList());
+
+        item.setItemMeta(meta);
+        return item;
+    }
+
+    public void reloadPunishments() {
+        loadPunishments();
+    }
 }

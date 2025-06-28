@@ -1,5 +1,5 @@
 name: UltimateStaff
-version: '1.0.2'
+version: '1.0.3'
 main: com.smokypeaks.Main
 api-version: '1.21'
 softdepends: [LuckPerms]
@@ -8,6 +8,11 @@ description: Ultimate staff management plugin
 libraries:
   - com.google.code.gson:gson:2.10.1
 commands:
+  ultimatestaff:
+    description: Main command for UltimateStaff plugin
+    usage: /ultimatestaff <subcommand>
+    aliases: [us, ustaff]
+    permission: ultimatestaff.staff.use
   ultimatestaffupdate:
     description: Check for plugin updates
     usage: /ultimatestaffupdate
@@ -39,7 +44,7 @@ commands:
   restart:
     description: Schedule a server restart
     usage: /restart <time> [reason]
-    aliases: [ serverrestart ]
+    aliases: [ serverrestart, usrestart ]
     permission: ultimatestaff.admin.restart
   reloadpunishments:
     description: Reload punishment configurations
@@ -58,6 +63,36 @@ commands:
     aliases: [ cc ]
     permission: ultimatestaff.staff.clearchat
 
+  punish:
+    description: Open the punishment menu for a player
+    usage: /punish <player>
+    aliases: [ p, ban, mute, warn ]
+    permission: ultimatestaff.staff.punish
+
+  deathlocation:
+    description: Check a player's last death location
+    usage: /deathlocation [player]
+    aliases: [ deathloc, dloc ]
+    permission: ultimatestaff.staff.deathlocation
+
+  restoredeathitems:
+    description: Restore a player's items from their last death
+    usage: /restoredeathitems <player>
+    aliases: [ restoreitems, rditems ]
+    permission: ultimatestaff.admin.restoreitems
+
+  chatfilter:
+    description: Manage the chat filter
+    usage: /chatfilter <add|remove|list|toggle|replacement|reload> [args]
+    aliases: [ cfilter, wordfilter ]
+    permission: ultimatestaff.admin.chatfilter
+
+      automod:
+    description: Control the automatic moderation system
+    usage: /automod <enable|disable|status|notify|clear|test|help> [args]
+    aliases: [ am, amod ]
+    permission: ultimatestaff.admin.automod
+
 permissions:
   ultimatestaff.admin.*:
     description: Gives access to all admin commands
@@ -65,6 +100,10 @@ permissions:
       ultimatestaff.admin.updates: true
       ultimatestaff.admin.chat: true
       ultimatestaff.admin.reload: true
+      ultimatestaff.admin.restoreitems: true
+      ultimatestaff.admin.chatfilter: true
+      ultimatestaff.admin.lag: true
+      ultimatestaff.admin.automod: true
 
   ultimatestaff.staff.*:
     description: Gives access to all staff commands
@@ -72,11 +111,18 @@ permissions:
       ultimatestaff.staff.chat: true
       ultimatestaff.staff.mode: true
       ultimatestaff.staff.vanish: true
+      ultimatestaff.staff.spectator: true
       ultimatestaff.staff.freeze: true
       ultimatestaff.staff.invsee: true
       ultimatestaff.staff.endersee: true
       ultimatestaff.staff.teleport: true
       ultimatestaff.staff.restart: true
+      ultimatestaff.staff.punish: true
+      ultimatestaff.staff.clearchat: true
+      ultimatestaff.staff.deathlocation: true
+      ultimatestaff.staff.filter.bypass: true
+      ultimatestaff.staff.filter.alerts: true
+      ultimatestaff.staff.use: true
 
   ultimatestaff.alerts.*:
     description: Gives access to all alerts
@@ -100,4 +146,7 @@ permissions:
       default: op
   ultimatestaff.staff.invsee.notify:
     description: Receive notifications when staff members modify player inventories
+    default: op
+      ultimatestaff.automod.bypass:
+    description: Bypass the AutoMod system
     default: op

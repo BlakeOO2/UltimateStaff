@@ -1,0 +1,16 @@
+# Chat Filter Configuration
+
+# Whether the chat filter is enabled
+enabled: true
+
+# The string used to replace filtered words
+replacement-string: "****"
+
+# List of words to filter
+filtered-words:
+  - nigger
+  - retard
+  - bastard
+  - kys
+  - whore
+  - slut

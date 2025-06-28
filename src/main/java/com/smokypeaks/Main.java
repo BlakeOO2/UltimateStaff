@@ -4,10 +4,7 @@ package com.smokypeaks;
 import com.smokypeaks.bungee.discord.DiscordManager;
 import com.smokypeaks.global.utils.UpdateChecker;
 import com.smokypeaks.server.commands.*;
-import com.smokypeaks.server.listeners.MiningListener;
-import com.smokypeaks.server.listeners.PunishmentMenuListener;
-import com.smokypeaks.server.listeners.ServerPluginMessageListener;
-import com.smokypeaks.server.listeners.StaffToolListener;
+import com.smokypeaks.server.listeners.*;
 import com.smokypeaks.server.managers.*;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.command.PluginCommand;
@@ -26,6 +23,10 @@ public class Main extends JavaPlugin {
     private boolean worldGuardEnabled = false;
     private TeleportManager teleportManager;
     private PunishmentManager punishmentManager;
+    private DeathManager deathManager;
+    private ChatFilterManager chatFilterManager;
+    private LagManager lagManager;
+    private AutoModManager autoModManager;
 
     @Override
     public void onLoad() {
@@ -72,6 +73,10 @@ public class Main extends JavaPlugin {
         this.miningAlertManager = new MiningAlertManager(this);
         this.teleportManager = new TeleportManager(this);
         this.punishmentManager = new PunishmentManager(this);
+        this.deathManager = new DeathManager(this);
+        this.chatFilterManager = new ChatFilterManager(this);
+        this.lagManager = new LagManager(this);
+        this.autoModManager = new AutoModManager(this);
         getServer().getPluginManager().registerEvents(new PunishmentMenuListener(this), this);
 
         if (isBungee) {
@@ -103,6 +108,16 @@ public class Main extends JavaPlugin {
     private void registerListeners() {
         getServer().getPluginManager().registerEvents(new StaffToolListener(this), this);
         getServer().getPluginManager().registerEvents(new MiningListener(this), this);
+        getServer().getPluginManager().registerEvents(new DeathListener(this), this);
+        getServer().getPluginManager().registerEvents(new ChatFilterListener(this), this);
+        getServer().getPluginManager().registerEvents(new PunishmentMenuListener(this), this);
+        getLogger().info("Registered PunishmentMenuListener");
+
+        // Register AutoMod listeners
+        getServer().getPluginManager().registerEvents(new AutoModChatListener(this), this);
+        getServer().getPluginManager().registerEvents(new AutoModPlayerListener(this), this);
+        getLogger().info("Registered AutoMod listeners");
+
         // Register other listeners as needed
     }
 
@@ -118,6 +133,7 @@ public class Main extends JavaPlugin {
             inventoryManager.cleanup();
             miningAlertManager.cleanup();
             teleportManager.cleanup();
+            deathManager.cleanup();
 
             // Unregister plugin message channels
             try {
@@ -151,6 +167,22 @@ public class Main extends JavaPlugin {
 
     public PunishmentManager getPunishmentManager() {
         return punishmentManager;
+    }
+
+    public DeathManager getDeathManager() {
+        return deathManager;
+    }
+
+    public ChatFilterManager getChatFilterManager() {
+        return chatFilterManager;
+    }
+
+    public LagManager getLagManager() {
+        return lagManager;
+    }
+
+    public AutoModManager getAutoModManager() {
+        return autoModManager;
     }
 
     private void registerCommands() {
@@ -231,6 +263,60 @@ public class Main extends JavaPlugin {
                 restartCommand.setExecutor(cmd);
                 restartCommand.setTabCompleter(cmd);
                 getLogger().info("Registered restart command successfully");
+            }
+
+            // UltimateStaff Command
+            PluginCommand ultimateStaffCommand = getCommand("ultimatestaff");
+            if (ultimateStaffCommand != null) {
+                UltimateStaffCommand cmd = new UltimateStaffCommand(this);
+                ultimateStaffCommand.setExecutor(cmd);
+                ultimateStaffCommand.setTabCompleter(cmd);
+                getLogger().info("Registered ultimatestaff command successfully");
+            }
+
+            // AutoMod Command
+            PluginCommand autoModCommand = getCommand("automod");
+            if (autoModCommand != null) {
+                AutoModCommand cmd = new AutoModCommand(this);
+                autoModCommand.setExecutor(cmd);
+                autoModCommand.setTabCompleter(cmd);
+                getLogger().info("Registered automod command successfully");
+            }
+
+            // Punish Command
+            PluginCommand punishCommand = getCommand("punish");
+            if (punishCommand != null) {
+                PunishCommand cmd = new PunishCommand(this);
+                punishCommand.setExecutor(cmd);
+                punishCommand.setTabCompleter(cmd);
+                getLogger().info("Registered punish command successfully");
+            }
+
+            // Death Location Command
+            PluginCommand deathLocationCommand = getCommand("deathlocation");
+            if (deathLocationCommand != null) {
+                DeathLocationCommand cmd = new DeathLocationCommand(this);
+                deathLocationCommand.setExecutor(cmd);
+                deathLocationCommand.setTabCompleter(cmd);
+                getLogger().info("Registered death location command successfully");
+            }
+
+            // Restore Death Items Command
+            PluginCommand restoreDeathItemsCommand = getCommand("restoredeathitems");
+            if (restoreDeathItemsCommand != null) {
+                RestoreDeathItemsCommand cmd = new RestoreDeathItemsCommand(this);
+                restoreDeathItemsCommand.setExecutor(cmd);
+                restoreDeathItemsCommand.setTabCompleter(cmd);
+                getLogger().info("Registered restore death items command successfully");
+            }
+
+            // Chat Filter Command
+            PluginCommand chatFilterCommand = getCommand("chatfilter");
+            if (chatFilterCommand != null) {
+                ChatFilterCommand cmd = new ChatFilterCommand(this);
+                chatFilterCommand.setExecutor(cmd);
+                chatFilterCommand.setTabCompleter(cmd);
+                getLogger().info("Registered chat filter command successfully");
             }
         } else {
             getLogger().info("Registering BungeeCord commands...");
