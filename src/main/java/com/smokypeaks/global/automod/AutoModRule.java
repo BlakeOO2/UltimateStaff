@@ -1,4 +1,4 @@
-package com.smokypeaks.server.automod;
+package com.smokypeaks.global.automod;
 
 /**
  * Represents a rule in the AutoMod system

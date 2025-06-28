@@ -87,7 +87,7 @@ commands:
     aliases: [ cfilter, wordfilter ]
     permission: ultimatestaff.admin.chatfilter
 
-      automod:
+  automod:
     description: Control the automatic moderation system
     usage: /automod <enable|disable|status|notify|clear|test|help> [args]
     aliases: [ am, amod ]
@@ -147,6 +147,6 @@ permissions:
   ultimatestaff.staff.invsee.notify:
     description: Receive notifications when staff members modify player inventories
     default: op
-      ultimatestaff.automod.bypass:
+  ultimatestaff.automod.bypass:
     description: Bypass the AutoMod system
     default: op

@@ -35,7 +35,12 @@ public class StaffModeManager {
 
     }
     public void toggleVanish(Player player) {
-        setVanished(player, !isVanished(player));
+        if(isVanished(player)){
+            setVanished(player, !isVanished(player));
+        } else {
+            setVanished(player, isVanished(player));
+        }
+
     }
 
     public void toggleSpectatorMode(Player player) {
@@ -112,13 +117,13 @@ public class StaffModeManager {
 
         // Set staff items
         player.getInventory().setItem(0, StaffItems.createVanishItem(isVanished(player)));
-        player.getInventory().setItem(1, StaffItems.createFreezeTool());
-        player.getInventory().setItem(2, StaffItems.createInvseeItem());
-        player.getInventory().setItem(3, StaffItems.createEnderChestItem());
-        player.getInventory().setItem(4, StaffItems.createRandomTpItem());
-        player.getInventory().setItem(5, StaffItems.createSpectatorItem(isInSpectatorMode(player)));
-        player.getInventory().setItem(8, StaffItems.createStaffListItem());
+        player.getInventory().setItem(1, StaffItems.createSpectatorItem(isInSpectatorMode(player)));
+        player.getInventory().setItem(2, StaffItems.createFreezeTool());
+        player.getInventory().setItem(3, StaffItems.createInvseeItem());
+        player.getInventory().setItem(4, StaffItems.createEnderChestItem());
+        player.getInventory().setItem(5, StaffItems.createRandomTpItem());
         player.getInventory().setItem(7, StaffItems.createPunishmentTool());
+        player.getInventory().setItem(8, StaffItems.createStaffListItem());
 
         player.updateInventory();
     }

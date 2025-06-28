@@ -1,8 +1,8 @@
 package com.smokypeaks.server.commands;
 
 import com.smokypeaks.Main;
-import com.smokypeaks.server.automod.ViolationType;
-import com.smokypeaks.server.permissions.StaffPermissions;
+import com.smokypeaks.global.automod.ViolationType;
+import com.smokypeaks.global.permissions.StaffPermissions;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.command.Command;

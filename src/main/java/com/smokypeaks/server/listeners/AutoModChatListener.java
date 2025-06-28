@@ -1,8 +1,7 @@
-package com.smokypeaks.server.automod.listeners;
+package com.smokypeaks.server.listeners;
 
 import com.smokypeaks.Main;
-import com.smokypeaks.server.automod.ViolationType;
-import io.papermc.paper.event.player.AsyncChatEvent;
+import com.smokypeaks.global.automod.ViolationType;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;

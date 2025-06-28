@@ -2,6 +2,7 @@
 package com.smokypeaks;
 
 import com.smokypeaks.bungee.discord.DiscordManager;
+import com.smokypeaks.global.automod.AutoModManager;
 import com.smokypeaks.global.utils.UpdateChecker;
 import com.smokypeaks.server.commands.*;
 import com.smokypeaks.server.listeners.*;
@@ -110,8 +111,8 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MiningListener(this), this);
         getServer().getPluginManager().registerEvents(new DeathListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatFilterListener(this), this);
-        getServer().getPluginManager().registerEvents(new PunishmentMenuListener(this), this);
-        getLogger().info("Registered PunishmentMenuListener");
+        // PunishmentMenuListener is already registered in onEnable method
+        getLogger().info("Using existing PunishmentMenuListener registration");
 
         // Register AutoMod listeners
         getServer().getPluginManager().registerEvents(new AutoModChatListener(this), this);

@@ -1,7 +1,7 @@
-package com.smokypeaks.server.automod.listeners;
+package com.smokypeaks.server.listeners;
 
 import com.smokypeaks.Main;
-import com.smokypeaks.server.automod.ViolationType;
+import com.smokypeaks.global.automod.ViolationType;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;

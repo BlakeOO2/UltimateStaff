@@ -19,7 +19,7 @@ import org.bukkit.inventory.ItemStack;
 public class StaffToolListener implements Listener {
     private final Main plugin;
     private final java.util.Map<java.util.UUID, Long> lastActionTime = new java.util.HashMap<>();
-    private static final long TOGGLE_COOLDOWN_MS = 500; // 500ms cooldown between any staff actions
+    private static final long TOGGLE_COOLDOWN_MS = 2000; // 500ms cooldown between any staff actions
 
     public StaffToolListener(Main plugin) {
         this.plugin = plugin;

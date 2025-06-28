@@ -17,6 +17,8 @@ public class StaffPermissions {
         public static final String OVERRIDE = ADMIN_BASE + "override";
         public static final String RESTORE_ITEMS = ADMIN_BASE + "restoreitems";
         public static final String CHAT_FILTER = ADMIN_BASE + "chatfilter";
+        public static final String AUTOMOD = ADMIN_BASE + "automod";
+        public static final String LAG_DIAGNOSTIC = ADMIN_BASE + "lag";
     }
 
     public static class Staff {

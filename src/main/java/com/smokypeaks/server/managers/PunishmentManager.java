@@ -11,6 +11,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 
 import java.util.*;
+import java.util.UUID;
 
 public class PunishmentManager {
     private final Main plugin;
@@ -265,6 +266,12 @@ public class PunishmentManager {
             return;
         }
 
+        // Store the current category in the session
+        MenuSession session = activeSessions.get(staff.getUniqueId());
+        if (session != null) {
+            session.setCurrentCategory(categoryKey);
+        }
+
         int rows = (int) Math.ceil(category.violations.size() / 9.0) + 1;
         int size = Math.min(6, rows) * 9;
         Inventory menu = Bukkit.createInventory(null, size, 
@@ -274,7 +281,16 @@ public class PunishmentManager {
         category.violations.forEach((key, violation) -> {
             int slot = menu.firstEmpty();
             if (slot >= 0 && slot < size - 9) { // Leave bottom row for navigation
-                menu.setItem(slot, violation.item);
+                // Create a copy of the item with the violation key stored in lore
+                ItemStack item = violation.item.clone();
+                ItemMeta meta = item.getItemMeta();
+                if (meta != null) {
+                    List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                    lore.add("§8Violation: " + key); // Store violation key for retrieval
+                    meta.setLore(lore);
+                    item.setItemMeta(meta);
+                }
+                menu.setItem(slot, item);
             }
         });
 
@@ -286,15 +302,35 @@ public class PunishmentManager {
     }
 
     public void openViolation(Player staff, String categoryKey, String violationKey) {
+        plugin.getLogger().info("Opening violation menu: category=" + categoryKey + ", violation=" + violationKey);
+
         Category category = categories.get(categoryKey);
         if (category == null) {
             staff.sendMessage("§cCategory not found!");
             return;
         }
 
+        // First try direct lookup
         Violation violation = category.violations.get(violationKey);
+
+        // If not found, try to find a violation by name (case insensitive)
+        if (violation == null) {
+            for (Map.Entry<String, Violation> entry : category.violations.entrySet()) {
+                String key = entry.getKey();
+                Violation value = entry.getValue();
+
+                // Check if the name matches
+                if (value.name.equalsIgnoreCase(violationKey) || key.equalsIgnoreCase(violationKey)) {
+                    violation = value;
+                    violationKey = key; // Update the key to the actual one
+                    break;
+                }
+            }
+        }
+
         if (violation == null) {
             staff.sendMessage("§cViolation not found!");
+            plugin.getLogger().warning("Violation not found in category " + categoryKey + ": " + violationKey);
             return;
         }
 
@@ -302,6 +338,13 @@ public class PunishmentManager {
         if (targetName == null) {
             staff.sendMessage("§cNo target selected!");
             return;
+        }
+
+        // Store the current category and violation in the session
+        MenuSession session = activeSessions.get(staff.getUniqueId());
+        if (session != null) {
+            session.setCurrentCategory(categoryKey);
+            session.setCurrentViolation(violationKey);
         }
 
         // Check if target is still online
@@ -317,10 +360,21 @@ public class PunishmentManager {
         Inventory menu = Bukkit.createInventory(null, size, 
             "§c§l" + violation.name + " - " + targetName);
 
-        // Add action buttons
+        // Add action buttons with additional metadata
         for (int i = 0; i < violation.actions.size(); i++) {
             if (i >= 0 && i < size - 9) { // Leave bottom row for navigation
-                menu.setItem(i, violation.actions.get(i).item);
+                PunishmentAction action = violation.actions.get(i);
+                ItemStack actionItem = action.item.clone();
+                ItemMeta meta = actionItem.getItemMeta();
+                if (meta != null) {
+                    List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
+                    lore.add("§8Category: " + categoryKey);
+                    lore.add("§8Violation: " + violationKey);
+                    lore.add("§8Action: " + action.name);
+                    meta.setLore(lore);
+                    actionItem.setItemMeta(meta);
+                }
+                menu.setItem(i, actionItem);
             }
         }
 
@@ -333,24 +387,75 @@ public class PunishmentManager {
     }
 
     public void executePunishment(Player staff, String categoryKey, String violationKey, String actionName) {
-        Category category = categories.get(categoryKey);
-        if (category == null) return;
+        plugin.getLogger().info("executePunishment called with category=" + categoryKey + ", violation=" + violationKey + ", action=" + actionName);
 
-        Violation violation = category.violations.get(violationKey);
-        if (violation == null) return;
+        // Check if any parameter is null
+        if (categoryKey == null || violationKey == null || actionName == null) {
+            plugin.getLogger().severe("Null parameter in executePunishment: category=" + categoryKey + ", violation=" + violationKey + ", action=" + actionName);
+            staff.sendMessage("§cError: Missing punishment information");
+            return;
+        }
+
+        Category category = categories.get(categoryKey);
+        if (category == null) {
+            plugin.getLogger().warning("Category not found: " + categoryKey);
+            staff.sendMessage("§cError: Category not found: " + categoryKey);
+            return;
+        }
+
+        // Check all violations in this category to find a match
+        Violation violation = null;
+        String actualViolationKey = null;
+
+        for (Map.Entry<String, Violation> entry : category.violations.entrySet()) {
+            String key = entry.getKey();
+            Violation value = entry.getValue();
+
+            // Check if the name matches (case insensitive)
+            if (value.name.equalsIgnoreCase(violationKey) || key.equalsIgnoreCase(violationKey)) {
+                violation = value;
+                actualViolationKey = key;
+                break;
+            }
+        }
+
+        // If not found, try direct key lookup as fallback
+        if (violation == null) {
+            violation = category.violations.get(violationKey);
+            actualViolationKey = violationKey;
+        }
+
+        if (violation == null) {
+            plugin.getLogger().warning("Violation not found in category " + categoryKey + ": " + violationKey);
+            staff.sendMessage("§cError: Violation not found: " + violationKey);
+            return;
+        }
 
         String targetName = activeMenus.get(staff.getUniqueId().toString());
-        if (targetName == null) return;
+        if (targetName == null) {
+            plugin.getLogger().warning("No target player found for staff: " + staff.getName());
+            staff.sendMessage("§cError: No target player selected");
+            return;
+        }
 
+        boolean actionFound = false;
         for (PunishmentAction action : violation.actions) {
+            plugin.getLogger().info("Checking action: " + action.name + " against: " + actionName);
             if (action.name.equalsIgnoreCase(actionName)) {
+                actionFound = true;
                 String command = action.command
                     .replace("%player%", targetName)
                     .replace("%duration%", action.duration);
 
+                plugin.getLogger().info("Opening confirmation menu with command: " + command);
                 openConfirmationMenu(staff, categoryKey, violationKey, actionName, targetName, command);
                 break;
             }
+        }
+
+        if (!actionFound) {
+            plugin.getLogger().warning("Action not found: " + actionName + " in violation: " + violationKey);
+            staff.sendMessage("§cError: Punishment action not found: " + actionName);
         }
     }
 
@@ -474,6 +579,52 @@ public class PunishmentManager {
 
         item.setItemMeta(meta);
         return item;
+    }
+
+    /**
+     * Gets the category for a player's current punishment session
+     * @param uuid The UUID of the player
+     * @return The category key, or null if not found
+     */
+    public String getSessionCategory(UUID uuid) {
+        MenuSession session = activeSessions.get(uuid);
+        return session != null ? session.getCurrentCategory() : null;
+    }
+
+    /**
+     * Gets the violation for a player's current punishment session
+     * @param uuid The UUID of the player
+     * @return The violation key, or null if not found
+     */
+    public String getSessionViolation(UUID uuid) {
+        MenuSession session = activeSessions.get(uuid);
+        return session != null ? session.getCurrentViolation() : null;
+    }
+
+    /**
+     * Get the violation key from a category by its display name
+     * @param categoryKey The category key
+     * @param violationName The violation display name
+     * @return The violation key, or null if not found
+     */
+    private String getViolationKeyByName(String categoryKey, String violationName) {
+        Category category = categories.get(categoryKey);
+        if (category == null) return null;
+
+        // Remove color codes and sanitize
+        String sanitizedName = violationName.toLowerCase().replaceAll("§[0-9a-fk-or]", "");
+
+        for (Map.Entry<String, Violation> entry : category.violations.entrySet()) {
+            String key = entry.getKey();
+            String name = entry.getValue().name.toLowerCase();
+
+            // Check if names match (ignoring case)
+            if (name.equals(sanitizedName)) {
+                return key;
+            }
+        }
+
+        return null;
     }
 
     public void reloadPunishments() {

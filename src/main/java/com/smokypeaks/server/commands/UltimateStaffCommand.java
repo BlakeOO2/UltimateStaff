@@ -1,7 +1,7 @@
 package com.smokypeaks.server.commands;
 
 import com.smokypeaks.Main;
-import com.smokypeaks.server.permissions.StaffPermissions;
+import com.smokypeaks.global.permissions.StaffPermissions;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;

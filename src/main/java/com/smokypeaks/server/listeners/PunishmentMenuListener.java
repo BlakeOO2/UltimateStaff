@@ -1,6 +1,7 @@
 package com.smokypeaks.server.listeners;
 
 import com.smokypeaks.Main;
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -125,11 +126,45 @@ public class PunishmentMenuListener implements Listener {
         return displayName.replaceAll("§[0-9a-fk-or]", "").toLowerCase().replace(" ", "_");
     }
 
+    /**
+     * Find the category key from the configuration based on the violation name
+     * @param violationName The name of the violation
+     * @return The category key if found, or null
+     */
+    private String findCategoryFromConfig(String violationName) {
+        String sanitizedName = violationName.toLowerCase().replaceAll("§[0-9a-fk-or]", "").replace(" ", "_");
+
+        // Search through the config for a matching violation name
+        for (String categoryKey : plugin.getConfig().getConfigurationSection("punishments").getKeys(false)) {
+            ConfigurationSection categorySection = plugin.getConfig().getConfigurationSection("punishments." + categoryKey + ".violations");
+            if (categorySection == null) continue;
+
+            for (String violationKey : categorySection.getKeys(false)) {
+                String configViolationName = categorySection.getString(violationKey + ".name", "").toLowerCase().replace(" ", "_");
+                if (configViolationName.contains(sanitizedName) || sanitizedName.contains(configViolationName)) {
+                    return categoryKey;
+                }
+            }
+        }
+
+        // If we get to this point, try to use the section name that matches most closely
+        for (String categoryKey : plugin.getConfig().getConfigurationSection("punishments").getKeys(false)) {
+            if (sanitizedName.contains(categoryKey.toLowerCase()) || 
+                categoryKey.toLowerCase().contains(sanitizedName)) {
+                return categoryKey;
+            }
+        }
+
+        plugin.getLogger().warning("Could not find category for violation: " + violationName);
+        return null;
+    }
+
     private void handleViolationMenu(Player player, ItemStack clicked) {
         ItemMeta meta = clicked.getItemMeta();
         if (meta == null) return;
 
         String name = meta.getDisplayName();
+        plugin.getLogger().info("Violation menu item clicked: " + name);
         if (name.contains("Back")) {
             // Extract category from the title and go back to that category
             String title = player.getOpenInventory().getTitle();
@@ -162,32 +197,60 @@ public class PunishmentMenuListener implements Listener {
                 plugin.getPunishmentManager().openMenu(player, target);
             }
         } else {
-            // This is a punishment action - extract needed info from title and item
+            // This is a punishment action - extract needed info from title and item metadata
             String title = player.getOpenInventory().getTitle();
             if (title.contains(" - ")) {
-                String[] parts = title.substring(MENU_PREFIX.length()).split(" - ", 2);
-                if (parts.length > 1) {
-                    String violationName = parts[0];
-                    String targetName = parts[1];
+                // First, try to extract information from item lore (more reliable)
+                String categoryKey = null;
+                String violationKey = null;
+                String actionName = null;
 
-                    // Determine category (again, a bit hacky)
-                    String categoryKey = null;
-                    if (violationName.toLowerCase().contains("ban")) {
-                        categoryKey = "bans";
-                    } else if (violationName.toLowerCase().contains("mute")) {
-                        categoryKey = "mutes";
-                    } else if (violationName.toLowerCase().contains("warn")) {
-                        categoryKey = "warns";
+                if (meta.hasLore()) {
+                    for (String loreLine : meta.getLore()) {
+                        if (loreLine.contains("Category:")) {
+                            categoryKey = loreLine.substring(loreLine.indexOf("Category: ") + 10).trim();
+                        } else if (loreLine.contains("Violation:")) {
+                            violationKey = loreLine.substring(loreLine.indexOf("Violation: ") + 11).trim();
+                        } else if (loreLine.contains("Action:")) {
+                            actionName = loreLine.substring(loreLine.indexOf("Action: ") + 8).trim();
+                        }
                     }
+                }
 
-                    if (categoryKey != null) {
-                        // Clean up action name and execute the punishment
-                        String actionName = name.replaceAll("§[0-9a-fk-or]", "");
-                        String violationKey = violationName.toLowerCase().replace(" ", "_");
-                        plugin.getPunishmentManager().executePunishment(player, categoryKey, violationKey, actionName);
+                // If we couldn't find the info in lore, fall back to title parsing
+                if (categoryKey == null || violationKey == null) {
+                    String[] parts = title.substring(MENU_PREFIX.length()).split(" - ", 2);
+                    if (parts.length > 1) {
+                        String violationName = parts[0];
+                        String targetName = parts[1];
+
+                        // Try to extract category from active session first
+                        if (plugin.getPunishmentManager().getSessionCategory(player.getUniqueId()) != null) {
+                            categoryKey = plugin.getPunishmentManager().getSessionCategory(player.getUniqueId());
+                        } else {
+                            // Extract category from the config structure based on the violation name
+                            // Look through all categories to find the matching violation
+                            categoryKey = findCategoryFromConfig(violationName);
+                        }
+
+                        violationKey = violationName.toLowerCase().replace(" ", "_");
                     }
+                }
+
+                // If action name wasn't in lore, use display name
+                if (actionName == null) {
+                    actionName = name.replaceAll("§[0-9a-fk-or]", "");
+                }
+
+                // Now execute the punishment if we have all the required info
+                if (categoryKey != null && violationKey != null && actionName != null) {
+                    plugin.getLogger().info("Executing punishment: category=" + categoryKey + ", violation=" + violationKey + ", action=" + actionName);
+                    plugin.getPunishmentManager().executePunishment(player, categoryKey, violationKey, actionName);
+                } else {
+                    plugin.getLogger().warning("Missing information for punishment execution: category=" + categoryKey + ", violation=" + violationKey + ", action=" + actionName);
+                    player.sendMessage("§cCould not execute punishment: missing information");
+                }
                 }
             }
         }
     }
-}

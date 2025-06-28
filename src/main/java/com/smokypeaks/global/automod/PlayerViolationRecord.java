@@ -1,4 +1,4 @@
-package com.smokypeaks.server.automod;
+package com.smokypeaks.global.automod;
 
 import java.util.EnumMap;
 

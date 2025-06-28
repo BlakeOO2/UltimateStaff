@@ -1,4 +1,4 @@
-package com.smokypeaks.server.automod;
+package com.smokypeaks.global.automod;
 
 /**
  * Represents the different types of punishments that can be applied
