@@ -2,8 +2,10 @@ package com.smokypeaks.server.listeners;
 
 import com.smokypeaks.Main;
 import com.smokypeaks.global.automod.ViolationType;
+import com.smokypeaks.server.listeners.automod.antixray.AntiXrayEngine;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -20,6 +22,7 @@ import java.util.UUID;
 
 public class AutoModPlayerListener implements Listener {
     private final Main plugin;
+    private final AntiXrayEngine xrayEngine;
 
     // Track player movements for potential cheating detection
     private final Map<UUID, Location> lastPositions = new HashMap<>();
@@ -39,6 +42,7 @@ public class AutoModPlayerListener implements Listener {
 
     public AutoModPlayerListener(Main plugin) {
         this.plugin = plugin;
+        this.xrayEngine = new AntiXrayEngine(plugin);
     }
 
     @EventHandler
@@ -47,7 +51,7 @@ public class AutoModPlayerListener implements Listener {
 
         // Check for inappropriate username
         String username = player.getName().toLowerCase();
-        if (username.contains("nigga") || username.contains("negro") || 
+        if (username.contains("nigga") || username.contains("negro") ||
             username.contains("hitler") || username.contains("fuck") ||
             username.contains("nazi") || username.contains("sex")) {
 
@@ -62,12 +66,16 @@ public class AutoModPlayerListener implements Listener {
     @EventHandler(priority = EventPriority.MONITOR, ignoreCancelled = true)
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
-        Material blockType = event.getBlock().getType();
+        Block block = event.getBlock();
 
         // Skip if player has bypass permission
         if (player.hasPermission("ultimatestaff.automod.bypass")) return;
 
-        // Check for X-ray (diamond mining without digging nearby blocks)
+        // Use the AntiXray engine for advanced detection
+        xrayEngine.analyzeMiningPattern(player, block);
+
+        // Keep the simple detection as a fallback
+        Material blockType = block.getType();
         for (Material valuableOre : VALUABLE_ORES) {
             if (blockType == valuableOre) {
                 // Get or create mining record for this player
@@ -79,12 +87,12 @@ public class AutoModPlayerListener implements Listener {
                 playerMining.put(blockType, count);
 
                 // Check for suspicious pattern (threshold varies by ore type)
-                int threshold = (blockType == Material.ANCIENT_DEBRIS) ? 5 : 10;
+                int threshold = (blockType == Material.ANCIENT_DEBRIS) ? 5 : 20;
                 if (count >= threshold) {
                     plugin.getAutoModManager().processViolation(
                             player.getUniqueId(),
                             ViolationType.CHEATING,
-                            "Suspicious ore mining pattern: " + count + " " + 
+                            "Suspicious ore mining pattern: " + count + " " +
                                     blockType.toString().replace("_", " ").toLowerCase()
                     );
 
@@ -100,8 +108,8 @@ public class AutoModPlayerListener implements Listener {
     public void onPlayerTeleport(PlayerTeleportEvent event) {
         // Skip normal movement causes
         if (event.getCause() == PlayerTeleportEvent.TeleportCause.ENDER_PEARL ||
-            event.getCause() == PlayerTeleportEvent.TeleportCause.COMMAND ||
-            event.getCause() == PlayerTeleportEvent.TeleportCause.PLUGIN) {
+                event.getCause() == PlayerTeleportEvent.TeleportCause.COMMAND ||
+                event.getCause() == PlayerTeleportEvent.TeleportCause.PLUGIN) {
             return;
         }
 
@@ -113,6 +121,12 @@ public class AutoModPlayerListener implements Listener {
         // Check for suspicious teleportation
         Location from = event.getFrom();
         Location to = event.getTo();
+
+        // Check if locations are in the same world
+        if (!from.getWorld().equals(to.getWorld())) {
+            return; // Skip distance check for cross-world teleports
+        }
+
         double distance = from.distance(to);
 
         if (distance > 30 && event.getCause() == PlayerTeleportEvent.TeleportCause.UNKNOWN) {
@@ -170,7 +184,7 @@ public class AutoModPlayerListener implements Listener {
         if (player.hasPermission("ultimatestaff.automod.bypass")) return;
 
         // Check for lag-inducing blocks
-        if (blockType == Material.HOPPER || blockType == Material.OBSERVER || 
+        if (blockType == Material.HOPPER || blockType == Material.OBSERVER ||
             blockType == Material.COMPARATOR || blockType == Material.REPEATER) {
 
             // Count redstone components in a small radius
@@ -182,7 +196,7 @@ public class AutoModPlayerListener implements Listener {
                 for (int y = -radius; y <= radius; y++) {
                     for (int z = -radius; z <= radius; z++) {
                         Material type = loc.clone().add(x, y, z).getBlock().getType();
-                        if (type == Material.HOPPER || type == Material.OBSERVER || 
+                        if (type == Material.HOPPER || type == Material.OBSERVER ||
                             type == Material.COMPARATOR || type == Material.REPEATER ||
                             type == Material.REDSTONE_WIRE) {
                             count++;

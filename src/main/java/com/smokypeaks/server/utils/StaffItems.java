@@ -20,7 +20,7 @@ public class StaffItems {
 
     public static ItemStack createSpectatorItem(boolean spectator) {
         return createItem(
-                spectator ? Material.ENDER_EYE : Material.ENDER_PEARL,
+                spectator ? Material.SOUL_LANTERN : Material.LANTERN,
                 "§5Spectator Mode: " + (spectator ? "§aEnabled" : "§cDisabled"),
                 "§7Click to toggle between spectator and survival"
         );

@@ -13,6 +13,7 @@ public enum ViolationType {
     // Gameplay Violations
     UNFAIR_ADVANTAGE,
     CHEATING,
+    XRAY,
     BUG_ABUSE,
     NON_CONSENSUAL_PVP,
     GRIEFING,

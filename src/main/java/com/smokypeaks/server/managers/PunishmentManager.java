@@ -73,9 +73,9 @@ public class PunishmentManager {
     }
 
     private record PendingPunishment(String category, String violation, String actionName, String targetName, String command) {}
-    private record Category(String name, Material icon, int slot, Map<String, Violation> violations) {}
-    private record Violation(String name, ItemStack item, List<PunishmentAction> actions) {}
-    private record PunishmentAction(String name, String duration, String command, ItemStack item) {}
+    public record Category(String name, Material icon, int slot, Map<String, Violation> violations) {}
+    public record Violation(String name, ItemStack item, List<PunishmentAction> actions) {}
+    public record PunishmentAction(String name, String duration, String command, ItemStack item) {}
 
     public void loadPunishments() {
         try {
@@ -281,16 +281,23 @@ public class PunishmentManager {
         category.violations.forEach((key, violation) -> {
             int slot = menu.firstEmpty();
             if (slot >= 0 && slot < size - 9) { // Leave bottom row for navigation
-                // Create a copy of the item with the violation key stored in lore
+                // Create a copy of the item with both category and violation keys stored in lore
                 ItemStack item = violation.item.clone();
                 ItemMeta meta = item.getItemMeta();
                 if (meta != null) {
                     List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add("§8Violation: " + key); // Store violation key for retrieval
+                    // Clear any existing keys to avoid duplicates
+                    lore.removeIf(line -> line.contains("§8Category:") || line.contains("§8Violation:") || line.contains("§eCategory:"));
+                    // Add both the category and violation keys for internal tracking
+                    lore.add("§8Category: " + categoryKey);
+                    lore.add("§8Violation: " + key);
+                    // Add visible category information right before the hidden keys
+                    lore.add("§eCategory: §f" + category.name());
                     meta.setLore(lore);
                     item.setItemMeta(meta);
                 }
                 menu.setItem(slot, item);
+                plugin.getLogger().info("Added violation item: " + violation.name + " with key: " + key + " to slot " + slot);
             }
         });
 
@@ -301,8 +308,24 @@ public class PunishmentManager {
         staff.openInventory(menu);
     }
 
+    /**
+     * Opens a menu displaying available punishments for a specific violation
+     * This will show the proper progression of punishments (warning, 1h mute, 24h mute, permanent mute, etc.)
+     * based on the violation configuration in config.yml
+     * 
+     * @param staff The staff member applying the punishment
+     * @param categoryKey The category key (e.g. respect_and_chat)
+     * @param violationKey The violation key (e.g. chat_abuse)
+     */
     public void openViolation(Player staff, String categoryKey, String violationKey) {
         plugin.getLogger().info("Opening violation menu: category=" + categoryKey + ", violation=" + violationKey);
+
+        // Validate both parameters are present
+        if (categoryKey == null || violationKey == null) {
+            plugin.getLogger().severe("Missing required parameters - category: " + categoryKey + ", violation: " + violationKey);
+            staff.sendMessage("§cError: Missing required punishment information");
+            return;
+        }
 
         Category category = categories.get(categoryKey);
         if (category == null) {
@@ -310,19 +333,32 @@ public class PunishmentManager {
             return;
         }
 
+        // Log available violations for debugging
+        plugin.getLogger().info("Available violations in category " + categoryKey + ": " + 
+                               String.join(", ", category.violations.keySet()));
+
         // First try direct lookup
         Violation violation = category.violations.get(violationKey);
+        String actualKey = violationKey;
 
         // If not found, try to find a violation by name (case insensitive)
         if (violation == null) {
+            String normalizedInput = stripColorCodes(violationKey).toLowerCase();
+            plugin.getLogger().info("Looking for violation with normalized name: '" + normalizedInput + "'");
+
             for (Map.Entry<String, Violation> entry : category.violations.entrySet()) {
                 String key = entry.getKey();
                 Violation value = entry.getValue();
 
-                // Check if the name matches
-                if (value.name.equalsIgnoreCase(violationKey) || key.equalsIgnoreCase(violationKey)) {
+                // Check if the name matches (with color codes removed)
+                String normalizedName = stripColorCodes(value.name).toLowerCase();
+
+                plugin.getLogger().info("Comparing with: '" + normalizedName + "' (key: " + key + ")");
+
+                if (normalizedName.equals(normalizedInput) || key.equalsIgnoreCase(violationKey)) {
                     violation = value;
-                    violationKey = key; // Update the key to the actual one
+                    actualKey = key; // Update the key to the actual one
+                    plugin.getLogger().info("Found violation by name match: " + key);
                     break;
                 }
             }
@@ -334,18 +370,37 @@ public class PunishmentManager {
             return;
         }
 
+        // Update the violation key to the actual one found
+        violationKey = actualKey;
+
         String targetName = activeMenus.get(staff.getUniqueId().toString());
         if (targetName == null) {
             staff.sendMessage("§cNo target selected!");
             return;
         }
 
-        // Store the current category and violation in the session
+        // Get or create a session and update it
         MenuSession session = activeSessions.get(staff.getUniqueId());
-        if (session != null) {
-            session.setCurrentCategory(categoryKey);
-            session.setCurrentViolation(violationKey);
+        if (session == null) {
+            Player target = Bukkit.getPlayer(targetName);
+            if (target != null) {
+                session = new MenuSession(target);
+                activeSessions.put(staff.getUniqueId(), session);
+                plugin.getLogger().info("Created new session for " + staff.getName());
+            } else {
+                plugin.getLogger().warning("Cannot create session - target player is null");
+                staff.sendMessage("§cError: Target player not found");
+                return;
+            }
         }
+
+        // Always update with the actual key values
+        session.setCurrentCategory(categoryKey);
+        session.setCurrentViolation(actualKey); // Store the actual key, not the display name
+
+        plugin.getLogger().info("Session updated - staff: " + staff.getName() 
+            + ", category: " + categoryKey 
+            + ", violation: " + actualKey);
 
         // Check if target is still online
         Player target = Bukkit.getPlayer(targetName);
@@ -355,30 +410,55 @@ public class PunishmentManager {
             return;
         }
 
-        int rows = (int) Math.ceil(violation.actions.size() / 9.0) + 1;
-        int size = Math.min(6, rows) * 9;
-        Inventory menu = Bukkit.createInventory(null, size, 
+        // Calculate menu size based on number of actions (minimum 3 rows)
+        int actionCount = violation.actions.size();
+        int rows = Math.max(3, (int) Math.ceil(actionCount / 7.0) + 1);
+        int size = rows * 9;
+
+        Inventory menu = Bukkit.createInventory(null, size,
             "§c§l" + violation.name + " - " + targetName);
 
-        // Add action buttons with additional metadata
-        for (int i = 0; i < violation.actions.size(); i++) {
-            if (i >= 0 && i < size - 9) { // Leave bottom row for navigation
-                PunishmentAction action = violation.actions.get(i);
-                ItemStack actionItem = action.item.clone();
-                ItemMeta meta = actionItem.getItemMeta();
-                if (meta != null) {
-                    List<String> lore = meta.hasLore() ? new ArrayList<>(meta.getLore()) : new ArrayList<>();
-                    lore.add("§8Category: " + categoryKey);
-                    lore.add("§8Violation: " + violationKey);
-                    lore.add("§8Action: " + action.name);
-                    meta.setLore(lore);
-                    actionItem.setItemMeta(meta);
-                }
-                menu.setItem(i, actionItem);
+        // Add action buttons starting from slot 10 (second row, second slot)
+        int slot = 10;
+        for (PunishmentAction action : violation.actions) {
+            if (slot % 9 <= 1) { // Skip first two slots of each row
+                slot += 2;
             }
+            if (slot % 9 == 8) { // Skip last slot of each row
+                slot += 3;
+            }
+            if (slot >= size - 9) break; // Stop before the last row
+
+            // Create the action button with a new ItemStack to avoid modification issues
+            ItemStack actionItem = new ItemStack(Material.PAPER);
+            if (action.item != null && action.item.getType() != Material.AIR) {
+                actionItem.setType(action.item.getType());
+            }
+
+            ItemMeta meta = actionItem.getItemMeta();
+            if (meta != null) {
+                meta.setDisplayName("§e§l" + action.name);
+                List<String> lore = new ArrayList<>();
+                if (!action.duration.isEmpty()) {
+                    lore.add("§eDuration: §f" + action.duration);
+                }
+                lore.add("§eCategory: §f" + category.name());
+                lore.add("§eViolation: §f" + violation.name());
+                lore.add("§7Click to execute");
+                // Add metadata for tracking
+                lore.add("§8Category: " + categoryKey);
+                lore.add("§8Violation: " + violationKey);
+                lore.add("§8Action: " + action.name);
+                meta.setLore(lore);
+                actionItem.setItemMeta(meta);
+            }
+
+            menu.setItem(slot, actionItem);
+            plugin.getLogger().info("Added punishment action: " + action.name + " to slot " + slot);
+            slot++;
         }
 
-        // Add back button
+        // Add back button in the bottom row
         ItemStack backButton = createButton(Material.BARRIER, "§c§lBack", "§7Return to category");
         menu.setItem(size - 5, backButton);
 
@@ -411,10 +491,14 @@ public class PunishmentManager {
             String key = entry.getKey();
             Violation value = entry.getValue();
 
-            // Check if the name matches (case insensitive)
-            if (value.name.equalsIgnoreCase(violationKey) || key.equalsIgnoreCase(violationKey)) {
+            // Check if the name matches (case insensitive, without color codes)
+            String normalizedName = stripColorCodes(value.name).toLowerCase();
+            String normalizedInput = stripColorCodes(violationKey).toLowerCase();
+
+            if (normalizedName.equals(normalizedInput) || key.equalsIgnoreCase(violationKey)) {
                 violation = value;
                 actualViolationKey = key;
+                plugin.getLogger().info("Found violation match: " + key);
                 break;
             }
         }
@@ -598,7 +682,18 @@ public class PunishmentManager {
      */
     public String getSessionViolation(UUID uuid) {
         MenuSession session = activeSessions.get(uuid);
-        return session != null ? session.getCurrentViolation() : null;
+        String violation = session != null ? session.getCurrentViolation() : null;
+        String category = session != null ? session.getCurrentCategory() : null;
+
+        plugin.getLogger().info("Getting session violation for " + uuid + ": " + violation);
+        plugin.getLogger().info("Got from session - category: " + category + ", violation: " + violation);
+
+        if (violation == null && category != null) {
+            plugin.getLogger().warning("Could not determine violation key for: " + 
+                (session != null && category != null ? categories.get(category).name : "Unknown"));
+        }
+
+        return violation;
     }
 
     /**
@@ -612,7 +707,7 @@ public class PunishmentManager {
         if (category == null) return null;
 
         // Remove color codes and sanitize
-        String sanitizedName = violationName.toLowerCase().replaceAll("§[0-9a-fk-or]", "");
+        String sanitizedName = stripColorCodes(violationName).toLowerCase();
 
         for (Map.Entry<String, Violation> entry : category.violations.entrySet()) {
             String key = entry.getKey();
@@ -629,5 +724,61 @@ public class PunishmentManager {
 
     public void reloadPunishments() {
         loadPunishments();
+    }
+
+    /**
+     * Get all category names
+     * @return List of category keys
+     */
+    public List<String> getCategoryNames() {
+        return new ArrayList<>(categories.keySet());
+    }
+
+    /**
+     * Get category display names with their keys
+     * @return List of formatted strings with category info
+     */
+    public List<String> getCategoryDisplayNames() {
+        List<String> result = new ArrayList<>();
+        categories.forEach((key, category) -> {
+            result.add(key + " (" + category.name() + ")");
+        });
+        return result;
+    }
+
+    /**
+     * Get all violation names in a category
+     * @param categoryKey The category key
+     * @return List of violation keys and names, or empty list if category not found
+     */
+    public List<String> getViolationNames(String categoryKey) {
+        Category category = categories.get(categoryKey);
+        if (category == null) return new ArrayList<>();
+
+        List<String> result = new ArrayList<>();
+        category.violations().forEach((key, violation) -> {
+            result.add(key + " (" + violation.name() + ")");
+        });
+        return result;
+    }
+
+    /**
+     * Clear a player's punishment session
+     * @param uuid The UUID of the player
+     */
+    public void clearSession(UUID uuid) {
+        activeSessions.remove(uuid);
+        activeMenus.remove(uuid.toString());
+        pendingPunishments.remove(uuid.toString());
+        plugin.getLogger().info("Cleared punishment session for " + uuid);
+    }
+
+    /**
+     * Helper method to strip color codes from a string
+     * @param input The string to strip color codes from
+     * @return The string without color codes
+     */
+    private String stripColorCodes(String input) {
+        return input != null ? input.replaceAll("§[0-9a-fk-or]", "").trim() : "";
     }
 }

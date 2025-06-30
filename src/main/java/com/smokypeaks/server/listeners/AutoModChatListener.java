@@ -16,7 +16,7 @@ public class AutoModChatListener implements Listener {
 
     // Chat filters
     private final Pattern harassmentPattern = Pattern.compile(
-            "(?i).*(retard|kys|kill yourself|suicide|idiot|moron|dumb|trash|garbage|noob|loser|suck|kys|trash player).*"
+            "(?i).*(retard|kys|kill yourself|suicide|idiot|moron|kys).*"
     );
 
     private final Pattern spamPattern = Pattern.compile(

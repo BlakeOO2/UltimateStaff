@@ -46,5 +46,8 @@ public class StaffPermissions {
     public static class Alerts {
         private static final String ALERTS_BASE = BASE + "alerts.";
         public static final String MINING = ALERTS_BASE + "mining";
+        public static final String XRAY = ALERTS_BASE + "xray";
+        public static final String XRAY_COMMANDS = "ultimatestaff.staff.xray_commands";
+        public static final String XRAY_LEARNING = ALERTS_BASE + "xray.learning";
     }
 }

@@ -32,15 +32,9 @@ public class StaffModeManager {
         } else {
             enableStaffMode(player);
         }
-
     }
     public void toggleVanish(Player player) {
-        if(isVanished(player)){
-            setVanished(player, !isVanished(player));
-        } else {
-            setVanished(player, isVanished(player));
-        }
-
+        setVanished(player, !isVanished(player));
     }
 
     public void toggleSpectatorMode(Player player) {

@@ -28,6 +28,7 @@ public class Main extends JavaPlugin {
     private ChatFilterManager chatFilterManager;
     private LagManager lagManager;
     private AutoModManager autoModManager;
+    private AntiXrayManager antiXrayManager;
 
     @Override
     public void onLoad() {
@@ -78,6 +79,7 @@ public class Main extends JavaPlugin {
         this.chatFilterManager = new ChatFilterManager(this);
         this.lagManager = new LagManager(this);
         this.autoModManager = new AutoModManager(this);
+        this.antiXrayManager = new AntiXrayManager(this);
         getServer().getPluginManager().registerEvents(new PunishmentMenuListener(this), this);
 
         if (isBungee) {
@@ -107,7 +109,7 @@ public class Main extends JavaPlugin {
     }
 
     private void registerListeners() {
-        getServer().getPluginManager().registerEvents(new StaffToolListener(this), this);
+        //getServer().getPluginManager().registerEvents(new StaffToolListener(this), this);
         getServer().getPluginManager().registerEvents(new MiningListener(this), this);
         getServer().getPluginManager().registerEvents(new DeathListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatFilterListener(this), this);
@@ -117,6 +119,7 @@ public class Main extends JavaPlugin {
         // Register AutoMod listeners
         getServer().getPluginManager().registerEvents(new AutoModChatListener(this), this);
         getServer().getPluginManager().registerEvents(new AutoModPlayerListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.smokypeaks.server.listeners.automod.antixray.AntiXrayListener(this), this);
         getLogger().info("Registered AutoMod listeners");
 
         // Register other listeners as needed
@@ -184,6 +187,10 @@ public class Main extends JavaPlugin {
 
     public AutoModManager getAutoModManager() {
         return autoModManager;
+    }
+
+    public AntiXrayManager getAntiXrayManager() {
+        return antiXrayManager;
     }
 
     private void registerCommands() {
@@ -318,6 +325,33 @@ public class Main extends JavaPlugin {
                 chatFilterCommand.setExecutor(cmd);
                 chatFilterCommand.setTabCompleter(cmd);
                 getLogger().info("Registered chat filter command successfully");
+            }
+
+            // Punishment Debug Command
+            PluginCommand punishDebugCommand = getCommand("punishdebug");
+            if (punishDebugCommand != null) {
+                com.smokypeaks.server.commands.debug.PunishmentDebugCommand cmd = new com.smokypeaks.server.commands.debug.PunishmentDebugCommand(this);
+                punishDebugCommand.setExecutor(cmd);
+                punishDebugCommand.setTabCompleter(cmd);
+                getLogger().info("Registered punishment debug command successfully");
+            }
+
+            // X-ray Command
+            PluginCommand xrayCommand = getCommand("xray");
+            if (xrayCommand != null) {
+                com.smokypeaks.server.commands.antixray.XrayCommand cmd = new com.smokypeaks.server.commands.antixray.XrayCommand(this);
+                xrayCommand.setExecutor(cmd);
+                xrayCommand.setTabCompleter(cmd);
+                getLogger().info("Registered xray command successfully");
+            }
+
+            // X-ray Learning Command
+            PluginCommand xrayLearnCommand = getCommand("xraylearn");
+            if (xrayLearnCommand != null) {
+                com.smokypeaks.server.commands.antixray.XrayLearningCommand cmd = new com.smokypeaks.server.commands.antixray.XrayLearningCommand(this);
+                xrayLearnCommand.setExecutor(cmd);
+                xrayLearnCommand.setTabCompleter(cmd);
+                getLogger().info("Registered xray learning command successfully");
             }
         } else {
             getLogger().info("Registering BungeeCord commands...");
