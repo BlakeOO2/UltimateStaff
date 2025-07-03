@@ -51,6 +51,15 @@ public class AutoModCommand implements CommandExecutor, TabCompleter {
                         (enabled ? "§aEnabled" : "§cDisabled") + 
                         "§6, Notification Target: §f" + target);
             }
+
+            case "stats" -> {
+                sender.sendMessage("§b[AutoMod] Learned Data Stats:");
+                com.smokypeaks.server.listeners.automod.chat.AutoModChatListener chatListener = 
+                        plugin.getAutoModManager().getChatListener();
+                sender.sendMessage("§e- Approved phrases: §f" + chatListener.getApprovedPhraseCount());
+                sender.sendMessage("§e- Denied phrases: §f" + chatListener.getDeniedPhraseCount());
+                sender.sendMessage("§e- Flagged phrases: §f" + chatListener.getFlaggedPhraseCount());
+            }
             case "notify" -> {
                 if (args.length < 2) {
                     sender.sendMessage("§c[AutoMod] Please specify a player name!");
@@ -110,6 +119,9 @@ public class AutoModCommand implements CommandExecutor, TabCompleter {
                 "§e/automod enable §7- Enable the AutoMod system\n" +
                 "§e/automod disable §7- Disable the AutoMod system\n" +
                 "§e/automod status §7- Check the current status\n" +
+                "§e/automod stats §7- View AutoMod learning statistics\n" +
+                "§e/automod stats §7- View AutoMod learning statistics\n" +
+                "§e/automod stats §7- View AutoMod learning statistics\n" +
                 "§e/automod notify <player> §7- Set notification target\n" +
                 "§e/automod clear [player] §7- Clear violation records\n" +
                 "§e/automod test <player> <violation> §7- Test a violation\n" +
@@ -119,7 +131,7 @@ public class AutoModCommand implements CommandExecutor, TabCompleter {
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
         if (args.length == 1) {
-            return Arrays.asList("enable", "disable", "status", "notify", "clear", "test", "help")
+            return Arrays.asList("enable", "disable", "status", "stats", "notify", "clear", "test", "help")
                     .stream()
                     .filter(s -> s.startsWith(args[0].toLowerCase()))
                     .collect(Collectors.toList());

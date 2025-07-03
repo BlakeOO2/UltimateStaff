@@ -1,6 +1,7 @@
 package com.smokypeaks.global.automod;
 
 import com.smokypeaks.Main;
+import com.smokypeaks.server.listeners.automod.chat.AutoModChatListener;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 
@@ -8,6 +9,7 @@ import java.util.*;
 
 public class AutoModManager {
     private final Main plugin;
+    private AutoModChatListener chatListener;
     private final Map<UUID, PlayerViolationRecord> violationRecords = new HashMap<>();
     private final List<AutoModRule> rules = new ArrayList<>();
     private boolean enabled = true;
@@ -190,6 +192,22 @@ public class AutoModManager {
         } else { // Days
             return String.format(" for §f%d day%s", minutes / 1440, minutes / 1440 == 1 ? "" : "s");
         }
+    }
+
+    /**
+     * Get the AutoModChatListener instance
+     * @return The AutoModChatListener instance
+     */
+    public AutoModChatListener getChatListener() {
+        return chatListener;
+    }
+
+    /**
+     * Set the AutoModChatListener instance
+     * @param listener The AutoModChatListener instance
+     */
+    public void setChatListener(AutoModChatListener listener) {
+        this.chatListener = listener;
     }
 
     /**

@@ -49,11 +49,13 @@ public class InvseeCommand implements CommandExecutor {
             if (offlineTarget.hasPlayedBefore()) {
                 if (enderchest) {
                     plugin.getInventoryManager().openOfflineEnderChest(staff, offlineTarget);
+                    staff.sendMessage("§a[Staff] §eOpened offline enderchest inventory for §f" + targetName);
                 } else {
                     plugin.getInventoryManager().openOfflineInventory(staff, offlineTarget);
+                    staff.sendMessage("§a[Staff] §eOpened offline inventory for §f" + targetName);
                 }
             } else {
-                staff.sendMessage("§c[Staff] §ePlayer not found!");
+                staff.sendMessage("§c[Staff] §ePlayer not found or has never played before!");
             }
         }
 

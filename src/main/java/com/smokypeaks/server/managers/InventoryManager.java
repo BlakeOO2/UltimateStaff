@@ -44,9 +44,13 @@ public class InventoryManager {
     }
 
     public void openOfflineInventory(Player staff, OfflinePlayer target) {
+        // Log the attempt to access offline inventory
+        plugin.getLogger().info("Staff member " + staff.getName() + " is accessing offline inventory of " + target.getName());
+
         ItemStack[] inventory = storage.loadInventory(target.getUniqueId());
         if (inventory == null) {
             staff.sendMessage("§c[Staff] §eNo saved inventory found for that player!");
+            plugin.getLogger().warning("Failed to load offline inventory for " + target.getName() + " - no data found");
             return;
         }
 
@@ -54,6 +58,22 @@ public class InventoryManager {
                 "§8" + target.getName() + "'s Inventory");
         view.setContents(inventory);
         staff.openInventory(view);
+
+        // Notify staff with permission about this access
+        notifyStaff(staff.getName() + " is viewing the offline inventory of " + target.getName());
+    }
+
+    /**
+     * Notifies staff members with the notification permission
+     * @param message The message to send to staff
+     */
+    private void notifyStaff(String message) {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.hasPermission("ultimatestaff.staff.invsee.notify")) {
+                player.sendMessage("§b[Staff] §f" + message);
+            }
+        }
+        plugin.getLogger().info("[StaffNotification] " + message);
     }
 
     public void openOfflineEnderChest(Player staff, OfflinePlayer target) {

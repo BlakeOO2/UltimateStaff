@@ -11,7 +11,9 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.command.PluginCommand;
 
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 
 public class Main extends JavaPlugin {
     private static Main instance;
@@ -49,6 +51,9 @@ public class Main extends JavaPlugin {
         getLogger().info("=== UltimateStaff Enable Start ===");
         getLogger().info("Plugin Data Folder: " + getDataFolder().getAbsolutePath());
         getLogger().info("Config File Exists: " + new File(getDataFolder(), "config.yml").exists());
+
+        // Check if we need to apply an update from a previous download
+        checkAndApplyUpdate();
 
         // Check if we're running on Bungee or Paper
         try {
@@ -117,7 +122,7 @@ public class Main extends JavaPlugin {
         getLogger().info("Using existing PunishmentMenuListener registration");
 
         // Register AutoMod listeners
-        getServer().getPluginManager().registerEvents(new AutoModChatListener(this), this);
+        getServer().getPluginManager().registerEvents(new com.smokypeaks.server.listeners.automod.chat.AutoModChatListener(this), this);
         getServer().getPluginManager().registerEvents(new AutoModPlayerListener(this), this);
         getServer().getPluginManager().registerEvents(new com.smokypeaks.server.listeners.automod.antixray.AntiXrayListener(this), this);
         getLogger().info("Registered AutoMod listeners");
@@ -138,6 +143,11 @@ public class Main extends JavaPlugin {
             miningAlertManager.cleanup();
             teleportManager.cleanup();
             deathManager.cleanup();
+
+            // Save AntiXray learning data
+            if (antiXrayManager != null) {
+                antiXrayManager.saveLearningData();
+            }
 
             // Unregister plugin message channels
             try {
@@ -216,6 +226,8 @@ public class Main extends JavaPlugin {
             if (invseeCommand != null) {
                 invseeCommand.setExecutor(new InvseeCommand(this));
                 getLogger().info("Registered invsee command successfully");
+            } else {
+                getLogger().warning("Failed to register invsee command - command not found in plugin.yml");
             }
 
             // Clear chat
@@ -289,6 +301,8 @@ public class Main extends JavaPlugin {
                 autoModCommand.setExecutor(cmd);
                 autoModCommand.setTabCompleter(cmd);
                 getLogger().info("Registered automod command successfully");
+            } else {
+                getLogger().warning("Failed to register automod command - command not found in plugin.yml");
             }
 
             // Punish Command
@@ -353,6 +367,24 @@ public class Main extends JavaPlugin {
                 xrayLearnCommand.setTabCompleter(cmd);
                 getLogger().info("Registered xray learning command successfully");
             }
+
+            // Approve Message Command
+            PluginCommand approveMessageCommand = getCommand("approvemessage");
+            if (approveMessageCommand != null) {
+                com.smokypeaks.server.commands.automod.ApproveMessageCommand cmd = new com.smokypeaks.server.commands.automod.ApproveMessageCommand(this);
+                approveMessageCommand.setExecutor(cmd);
+                approveMessageCommand.setTabCompleter(cmd);
+                getLogger().info("Registered approve message command successfully");
+            }
+
+            // Deny Message Command
+            PluginCommand denyMessageCommand = getCommand("denymessage");
+            if (denyMessageCommand != null) {
+                com.smokypeaks.server.commands.automod.DenyMessageCommand cmd = new com.smokypeaks.server.commands.automod.DenyMessageCommand(this);
+                denyMessageCommand.setExecutor(cmd);
+                denyMessageCommand.setTabCompleter(cmd);
+                getLogger().info("Registered deny message command successfully");
+            }
         } else {
             getLogger().info("Registering BungeeCord commands...");
             // BungeeCord commands are registered in BungeeMain
@@ -402,5 +434,64 @@ public class Main extends JavaPlugin {
         reloadConfig();
         miningAlertManager.loadSettings();
         getLogger().info("Configuration reloaded");
+    }
+
+    /**
+     * Checks for and applies any pending plugin updates
+     */
+    private void checkAndApplyUpdate() {
+        File updateMarker = new File(getDataFolder(), "update.marker");
+        if (!updateMarker.exists()) {
+            return;
+        }
+
+        getLogger().info("Found update marker file, applying update...");
+
+        try {
+            // Read update information
+            String currentJarPath;
+            String updateJarPath;
+
+            try (BufferedReader reader = new BufferedReader(new FileReader(updateMarker))) {
+                currentJarPath = reader.readLine();
+                updateJarPath = reader.readLine();
+            }
+
+            File currentJar = new File(currentJarPath);
+            File updateJar = new File(updateJarPath);
+
+            if (!updateJar.exists()) {
+                getLogger().warning("Update file does not exist: " + updateJarPath);
+                updateMarker.delete();
+                return;
+            }
+
+            // Rename the update jar to the current jar name
+            File targetJar = new File(currentJar.getParentFile(), currentJar.getName());
+
+            getLogger().info("Applying update: Replacing " + targetJar.getAbsolutePath() + 
+                          " with " + updateJar.getAbsolutePath());
+
+            // Delete the current jar if it exists
+            if (targetJar.exists() && !targetJar.delete()) {
+                getLogger().warning("Failed to delete current jar file. Update may not be applied correctly.");
+            }
+
+            // Move the update jar to the target location
+            if (!updateJar.renameTo(targetJar)) {
+                getLogger().warning("Failed to rename update jar. Update may not be applied correctly.");
+            } else {
+                getLogger().info("Successfully applied update!");
+            }
+
+            // Clean up the marker file
+            updateMarker.delete();
+
+        } catch (Exception e) {
+            getLogger().severe("Error applying update: " + e.getMessage());
+            if (getConfig().getBoolean("debug", false)) {
+                e.printStackTrace();
+            }
+        }
     }
 }

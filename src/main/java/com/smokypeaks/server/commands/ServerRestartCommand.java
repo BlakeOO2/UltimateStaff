@@ -10,6 +10,7 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.command.TabCompleter;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -84,9 +85,19 @@ public class ServerRestartCommand implements CommandExecutor, TabCompleter {
             if (current <= 0) {
                 Bukkit.broadcastMessage("§c[Server] §eRestarting now...");
                 restartTask.cancel();
+
+                // Check if we have an update to apply on restart
+                File updateMarker = new File(plugin.getDataFolder(), "update.marker");
+                if (updateMarker.exists()) {
+                    Bukkit.broadcastMessage("§6[UltimateStaff] §eApplying plugin update during restart...");
+                }
+
+                // Use a slightly longer delay to ensure all messages are sent
                 Bukkit.getScheduler().runTaskLater(plugin, () -> {
-                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "restart");
-                }, 20L);
+                    // Use the stop command instead of restart for better compatibility
+                    // This ensures the JVM fully exits and the server script restarts it
+                    Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "stop");
+                }, 40L); // 2-second delay
             }
         }, 0L, 20L); // Run every second
     }

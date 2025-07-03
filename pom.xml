@@ -6,7 +6,7 @@
 
     <groupId>com.smokypeaks</groupId>
     <artifactId>UltimateStaff</artifactId>
-    <version>1.0.3</version>
+    <version>1.0.4</version>
     <packaging>jar</packaging>
 
     <name>UltimateStaff</name>

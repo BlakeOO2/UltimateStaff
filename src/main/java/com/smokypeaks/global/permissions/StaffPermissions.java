@@ -19,6 +19,7 @@ public class StaffPermissions {
         public static final String CHAT_FILTER = ADMIN_BASE + "chatfilter";
         public static final String AUTOMOD = ADMIN_BASE + "automod";
         public static final String LAG_DIAGNOSTIC = ADMIN_BASE + "lag";
+        public static final String AUTOMOD_DENY = ADMIN_BASE + "automoddeny";
     }
 
     public static class Staff {
@@ -49,5 +50,7 @@ public class StaffPermissions {
         public static final String XRAY = ALERTS_BASE + "xray";
         public static final String XRAY_COMMANDS = "ultimatestaff.staff.xray_commands";
         public static final String XRAY_LEARNING = ALERTS_BASE + "xray.learning";
+        public static final String AUTOMOD_APPROVE = BASE + ".automod.approve";
+        public static final String AUTOMOD_DENY = BASE + ".automod.deny";
     }
 }

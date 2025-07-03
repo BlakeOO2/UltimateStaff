@@ -1,5 +1,5 @@
 name: UltimateStaff
-version: '1.0.3'
+version: '${project.version}'
 main: com.smokypeaks.Main
 api-version: '1.21'
 softdepends: [LuckPerms]
@@ -27,6 +27,11 @@ commands:
     usage: /endersee <player>
     aliases: [ echest, ec ]
     permission: ultimatestaff.staff.endersee
+  invsee:
+    description: View a player's inventory
+    usage: /invsee <player> [enderchest]
+    aliases: [ inv ]
+    permission: ultimatestaff.staff.invsee
   stp:
     description: Staff teleport commands
     usage: /stp <player|random|back|pos> [args]
@@ -62,50 +67,7 @@ commands:
     usage: /clearchat [self|player <name>|all]
     aliases: [ cc ]
     permission: ultimatestaff.staff.clearchat
-name: UltimateStaff
-version: '${project.version}'
-main: com.smokypeaks.Main
-api-version: '1.20'
-authors: [BlakeOO2, SmokyPeaks]
-description: Comprehensive staff and moderation tools for Minecraft servers
 
-commands:
-  ultimatestaffupdate:
-    description: Check for updates to the plugin
-    aliases: [usupdate]
-    permission: ultimatestaff.admin.update
-  staffmode:
-    description: Toggle staff mode
-    aliases: [sm, staffm, mod, modmode]
-    permission: ultimatestaff.staff.staffmode
-  invsee:
-    description: View and edit a player's inventory
-    permission: ultimatestaff.staff.invsee
-  endersee:
-    description: View and edit a player's ender chest
-    permission: ultimatestaff.staff.endersee
-  stp:
-    description: Teleport to a player without them knowing
-    permission: ultimatestaff.staff.teleport
-  miningalerts:
-    description: Toggle mining alerts
-    aliases: [malerts]
-    permission: ultimatestaff.staff.miningalerts
-  miningconfig:
-    description: Configure mining alerts
-    aliases: [mconfig]
-    permission: ultimatestaff.admin.mining
-  miningdebug:
-    description: Debug mining alerts system
-    aliases: [mdebug]
-    permission: ultimatestaff.admin.mining.debug
-  restart:
-    description: Restart the server with a countdown
-    permission: ultimatestaff.admin.restart
-  ultimatestaff:
-    description: Main plugin command
-    aliases: [us]
-    permission: ultimatestaff.command
   automod:
     description: Configure and control the AutoMod system
     aliases: [am]
@@ -137,10 +99,15 @@ commands:
     description: Configure and control the AntiXray learning system
     aliases: [xlearning, xlearner]
     permission: ultimatestaff.alerts.xray.learning
-  clearchat:
-    description: Clear the chat for all players
-    aliases: [cc]
-    permission: ultimatestaff.staff.clearchat
+  approvemessage:
+    description: Approve message for autowatch
+    aliases: [approve]
+    permission: ultimatestaff.automod.approve
+  denymessage:
+    description: Blacklist message for autowatch
+    aliases: [deny]
+    permission: ultimatestaff.automod.deny
+
 
 permissions:
   ultimatestaff.admin:
@@ -156,6 +123,9 @@ permissions:
       ultimatestaff.admin.restoredeathitems: true
       ultimatestaff.admin.chatfilter: true
       ultimatestaff.admin.punishdebug: true
+      ultimatestaff.admin.discord: true
+      ultimatestaff.automod.approve: true
+
   ultimatestaff.staff:
     description: Staff permission for core staff features
     default: op
@@ -174,128 +144,7 @@ permissions:
       ultimatestaff.staff.filter_alerts: true
       ultimatestaff.staff.clearchat: true
       ultimatestaff.staff.xray_commands: true
-  ultimatestaff.command:
-    description: Permission to use the /ultimatestaff command
-    default: op
-  ultimatestaff.staff.staffmode:
-    description: Permission to use staff mode
-    default: op
-  ultimatestaff.staff.invsee:
-    description: Permission to view player inventories
-    default: op
-  ultimatestaff.staff.endersee:
-    description: Permission to view player ender chests
-    default: op
-  ultimatestaff.staff.teleport:
-    description: Permission to teleport to players
-    default: op
-  ultimatestaff.staff.miningalerts:
-    description: Permission to receive mining alerts
-    default: op
-  ultimatestaff.staff.punish:
-    description: Permission to punish players
-    default: op
-  ultimatestaff.staff.deathlocation:
-    description: Permission to view death locations
-    default: op
-  ultimatestaff.staff.chat:
-    description: Permission to use staff chat
-    default: op
-  ultimatestaff.staff.admin_chat:
-    description: Permission to use admin chat
-    default: op
-  ultimatestaff.staff.clearchat:
-    description: Permission to clear chat
-    default: op
-  ultimatestaff.admin.update:
-    description: Permission to check for updates
-    default: op
-  ultimatestaff.admin.mining:
-    description: Permission to configure mining alerts
-    default: op
-  ultimatestaff.admin.mining.debug:
-    description: Permission to debug mining alerts
-    default: op
-  ultimatestaff.admin.restart:
-    description: Permission to restart the server
-    default: op
-  ultimatestaff.admin.automod:
-    description: Permission to configure the AutoMod system
-    default: op
-  ultimatestaff.admin.restoredeathitems:
-    description: Permission to restore death items
-    default: op
-  ultimatestaff.admin.chatfilter:
-    description: Permission to configure the chat filter
-    default: op
-  ultimatestaff.admin.punishdebug:
-    description: Permission to debug the punishment system
-    default: op
-  ultimatestaff.staff.see_vanished:
-    description: Permission to see vanished players
-    default: op
-  ultimatestaff.staff.notify:
-    description: Permission to receive staff notifications
-    default: op
-  ultimatestaff.staff.filter_alerts:
-    description: Permission to receive chat filter alerts
-    default: op
-  ultimatestaff.staff.bypass_filter:
-    description: Permission to bypass the chat filter
-    default: op
-  ultimatestaff.staff.xray_commands:
-    description: Permission to use the xray commands
-    default: op
-  ultimatestaff.alerts.xray:
-    description: Permission to receive xray alerts
-    default: op
-  ultimatestaff.alerts.xray.learning:
-    description: Permission to control xray learning system
-    default: op
-  ultimatestaff.automod.bypass:
-    description: Permission to bypass automod checks
-    default: op
-  punish:
-    description: Open the punishment menu for a player
-    usage: /punish <player>
-    aliases: [ p, ban, mute, warn ]
-    permission: ultimatestaff.staff.punish
 
-  deathlocation:
-    description: Check a player's last death location
-    usage: /deathlocation [player]
-    aliases: [ deathloc, dloc ]
-    permission: ultimatestaff.staff.deathlocation
-
-  restoredeathitems:
-    description: Restore a player's items from their last death
-    usage: /restoredeathitems <player>
-    aliases: [ restoreitems, rditems ]
-    permission: ultimatestaff.admin.restoreitems
-
-  chatfilter:
-    description: Manage the chat filter
-    usage: /chatfilter <add|remove|list|toggle|replacement|reload> [args]
-    aliases: [ cfilter, wordfilter ]
-    permission: ultimatestaff.admin.chatfilter
-
-  automod:
-    description: Control the automatic moderation system
-    usage: /automod <enable|disable|status|notify|clear|test|help> [args]
-    aliases: [ am, amod ]
-    permission: ultimatestaff.admin.automod
-
-  punishdebug:
-    description: Debug the punishment system
-    usage: /punishdebug <session|categories|violations|clear>
-    permission: ultimatestaff.admin.debug
-
-  punishdebug:
-    description: Debug the punishment system
-    usage: /punishdebug <session|categories|violations|clear>
-    permission: ultimatestaff.admin.debug
-
-permissions:
   ultimatestaff.admin.*:
     description: Gives access to all admin commands
     children:
@@ -306,6 +155,14 @@ permissions:
       ultimatestaff.admin.chatfilter: true
       ultimatestaff.admin.lag: true
       ultimatestaff.admin.automod: true
+      ultimatestaff.admin.discord: true
+      ultimatestaff.admin.punishdebug: true
+      ultimatestaff.admin.debug: true
+      ultimatestaff.admin.alerts.config: true
+      ultimatestaff.admin.mining: true
+      ultimatestaff.admin.mining.debug: true
+      ultimatestaff.admin.restart: true
+      ultimatestaff.admin.restoredeathitems: true
 
   ultimatestaff.staff.*:
     description: Gives access to all staff commands
@@ -325,30 +182,59 @@ permissions:
       ultimatestaff.staff.filter.bypass: true
       ultimatestaff.staff.filter.alerts: true
       ultimatestaff.staff.use: true
+      ultimatestaff.staff.alerts.mining: true
+      ultimatestaff.staff.staffmode: true
+      ultimatestaff.staff.see_vanished: true
+      ultimatestaff.staff.notify: true
+      ultimatestaff.staff.xray_commands: true
 
   ultimatestaff.alerts.*:
     description: Gives access to all alerts
     children:
       ultimatestaff.alerts.mining: true
+      ultimatestaff.alerts.xray: true
+      ultimatestaff.alerts.xray.learning: true
 
-  ultimatestaff.admin.inventory.modify:
-    description: Allows modification of player inventories
+  ultimatestaff.command:
+    description: Permission to use the /ultimatestaff command
     default: op
-    ultimatestaff.staff.inventory.view:
-      description: Allows viewing player inventories
-      default: false
-    ultimatestaff.alerts.mining:
-      description: Allows receiving mining alerts
-      default: false
+
+  ultimatestaff.staff.staffmode:
+    description: Permission to use staff mode
+    default: op
+
+  ultimatestaff.staff.invsee:
+    description: Permission to view player inventories
+    default: op
+
+  ultimatestaff.staff.endersee:
+    description: Permission to view player ender chests
+    default: op
+
+  ultimatestaff.staff.teleport:
+    description: Permission to teleport to players
+    default: op
+
   ultimatestaff.staff.alerts.mining:
     description: Allows receiving mining alerts
     default: op
-    ultimatestaff.admin.alerts.config:
-      description: Allows configuring mining alerts
-      default: op
+
+  ultimatestaff.admin.alerts.config:
+    description: Allows configuring mining alerts
+    default: op
+
   ultimatestaff.staff.invsee.notify:
     description: Receive notifications when staff members modify player inventories
     default: op
+
   ultimatestaff.automod.bypass:
     description: Bypass the AutoMod system
+    default: op
+
+  ultimatestaff.automod.approve:
+    description: Permission to approve messages in the AutoMod system
+    default: op
+
+  ultimatestaff.automod.deny:
+    description: Permission to mark messages as inappropriate in the AutoMod system
     default: op

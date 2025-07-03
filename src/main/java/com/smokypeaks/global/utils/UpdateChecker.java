@@ -141,21 +141,28 @@ public class UpdateChecker {
         plugin.getLogger().info("Starting download from: " + downloadUrl);
 
         try {
-            // Create plugin update folder if it doesn't exist
-            File updateFolder = new File(plugin.getDataFolder(), "updates");
-            if (!updateFolder.exists()) {
-                updateFolder.mkdirs();
-            }
+            // Get the current jar file
+            File currentJar = new File(plugin.getClass()
+                    .getProtectionDomain()
+                    .getCodeSource()
+                    .getLocation()
+                    .toURI());
 
-            // Download new version
+            // Get the plugins folder (parent of the current jar)
+            File pluginsFolder = currentJar.getParentFile();
+            plugin.getLogger().info("Plugins folder: " + pluginsFolder.getAbsolutePath());
+
+            // Download new version directly to the plugins folder with a temporary name
             URL url = new URL(downloadUrl);
             HttpURLConnection connection = (HttpURLConnection) url.openConnection();
             connection.setRequestProperty("User-Agent", "UltimateStaff UpdateChecker");
 
-            // Get the file name from the URL
-            String fileName = "UltimateStaff-" +
-                    downloadUrl.substring(downloadUrl.lastIndexOf('/') + 1);
-            File downloadFile = new File(updateFolder, fileName);
+            // Get the original file name without version suffix for proper loading
+            String originalName = currentJar.getName();
+            // Use .update.jar suffix so it won't be loaded until renamed
+            File downloadFile = new File(pluginsFolder, originalName + ".update");
+
+            plugin.getLogger().info("Downloading update to: " + downloadFile.getAbsolutePath());
 
             // Download the file
             try (InputStream in = connection.getInputStream();
@@ -168,53 +175,24 @@ public class UpdateChecker {
                 }
             }
 
-            // Get the current jar file
-            File currentJar = new File(plugin.getClass()
-                    .getProtectionDomain()
-                    .getCodeSource()
-                    .getLocation()
-                    .toURI());
+            // Set update marker file with update information
+            File updateMarker = new File(plugin.getDataFolder(), "update.marker");
+            try (PrintWriter writer = new PrintWriter(updateMarker)) {
+                writer.println(currentJar.getAbsolutePath());
+                writer.println(downloadFile.getAbsolutePath());
+            }
 
-            // Create update script
-            createUpdateScript(currentJar, downloadFile);
-
-            plugin.getLogger().info("Update downloaded successfully! Restart the server to apply the update.");
+            plugin.getLogger().info("Update downloaded successfully! The plugin will be updated on next server restart.");
+            MessageUtil.notifyAdmins(plugin, "§6[UltimateStaff] §aUpdate downloaded! Will be applied on next server restart.");
 
         } catch (Exception e) {
             plugin.getLogger().warning("Failed to download update: " + e.getMessage());
             if (plugin.getConfig().getBoolean("debug", false)) {
                 e.printStackTrace();
             }
+            MessageUtil.notifyAdmins(plugin, "§c[UltimateStaff] §eFailed to download update: " + e.getMessage());
         }
     }
 
-    private void createUpdateScript(File currentJar, File newJar) throws IOException {
-        // Create platform-specific update script
-        boolean isWindows = System.getProperty("os.name").toLowerCase().contains("win");
-        File scriptFile;
-
-        if (isWindows) {
-            scriptFile = new File(plugin.getDataFolder(), "update.bat");
-            try (PrintWriter writer = new PrintWriter(scriptFile)) {
-                writer.println("@echo off");
-                writer.println("ping 127.0.0.1 -n 2 > nul");
-                writer.println("del \"" + currentJar.getAbsolutePath() + "\"");
-                writer.println("copy \"" + newJar.getAbsolutePath() + "\" \"" +
-                        currentJar.getAbsolutePath() + "\"");
-                writer.println("del \"" + newJar.getAbsolutePath() + "\"");
-            }
-        } else {
-            scriptFile = new File(plugin.getDataFolder(), "update.sh");
-            try (PrintWriter writer = new PrintWriter(scriptFile)) {
-                writer.println("#!/bin/bash");
-                writer.println("sleep 2");
-                writer.println("rm \"" + currentJar.getAbsolutePath() + "\"");
-                writer.println("cp \"" + newJar.getAbsolutePath() + "\" \"" +
-                        currentJar.getAbsolutePath() + "\"");
-                writer.println("rm \"" + newJar.getAbsolutePath() + "\"");
-            }
-            scriptFile.setExecutable(true);
-        }
-    }
 
 }

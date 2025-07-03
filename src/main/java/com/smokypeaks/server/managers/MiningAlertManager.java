@@ -452,10 +452,18 @@ public class MiningAlertManager {
                 staff.sendMessage(message);
 
                 if (settings.isSoundEnabled()) {
-                    staff.playSound(staff.getLocation(),
-                            settings.getSoundType(),
-                            settings.getSoundVolume(),
-                            settings.getSoundPitch());
+                    try {
+                        // Convert sound name format to lowercase with dots (Minecraft 1.20+ format)
+                        String soundName = settings.getSoundType().toLowerCase().replace("_", ".");
+                        staff.playSound(staff.getLocation(),
+                                soundName,
+                                settings.getSoundVolume(),
+                                settings.getSoundPitch());
+                    } catch (Exception e) {
+                        // Fallback to a default sound if there's an error
+                        staff.playSound(staff.getLocation(), "block.note_block.pling", 1.0f, 1.0f);
+                        plugin.getLogger().warning("Error playing sound: " + e.getMessage());
+                    }
                 }
             }
         }

@@ -22,7 +22,7 @@ public class XrayCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!sender.hasPermission(StaffPermissions.Staff.XRAY_COMMANDS)) {
+        if (!sender.hasPermission(StaffPermissions.Alerts.XRAY_COMMANDS)) {
             sender.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
             return true;
         }
@@ -70,7 +70,7 @@ public class XrayCommand implements CommandExecutor, TabCompleter {
 
     @Override
     public List<String> onTabComplete(CommandSender sender, Command command, String alias, String[] args) {
-        if (!sender.hasPermission(StaffPermissions.Staff.XRAY_COMMANDS)) {
+        if (!sender.hasPermission(StaffPermissions.Alerts.XRAY_COMMANDS)) {
             return List.of();
         }
 
