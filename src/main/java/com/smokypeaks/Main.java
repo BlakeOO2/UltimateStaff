@@ -110,6 +110,16 @@ public class Main extends JavaPlugin {
         // Start update checker
         updateChecker.checkForUpdates(false);
 
+        // Schedule periodic inventory saving for online players
+        getServer().getScheduler().runTaskTimer(this, () -> {
+            for (Player player : getServer().getOnlinePlayers()) {
+                inventoryManager.savePlayerData(player);
+            }
+            if (getConfig().getBoolean("debug", false)) {
+                getLogger().info("Performed scheduled inventory save for all online players");
+            }
+        }, 12000L, 12000L); // Every 10 minutes (12000 ticks)
+
         getLogger().info("UltimateStaff has been enabled successfully!");
     }
 
@@ -118,6 +128,7 @@ public class Main extends JavaPlugin {
         getServer().getPluginManager().registerEvents(new MiningListener(this), this);
         getServer().getPluginManager().registerEvents(new DeathListener(this), this);
         getServer().getPluginManager().registerEvents(new ChatFilterListener(this), this);
+        getServer().getPluginManager().registerEvents(new PlayerListener(this), this);
         // PunishmentMenuListener is already registered in onEnable method
         getLogger().info("Using existing PunishmentMenuListener registration");
 

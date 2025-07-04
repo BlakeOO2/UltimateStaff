@@ -37,6 +37,12 @@ public class InvseeCommand implements CommandExecutor {
         String targetName = args[0];
         boolean enderchest = args.length > 1 && args[1].equalsIgnoreCase("enderchest");
 
+        // Special handling for Bedrock players who often have a dot prefix
+        if (!targetName.startsWith(".") && Bukkit.getPlayer("." + targetName) != null) {
+            targetName = "." + targetName;
+            staff.sendMessage("§e[Staff] §fDetected Bedrock player, adjusted name to: " + targetName);
+        }
+
         Player targetPlayer = Bukkit.getPlayer(targetName);
         if (targetPlayer != null) {
             if (enderchest) {

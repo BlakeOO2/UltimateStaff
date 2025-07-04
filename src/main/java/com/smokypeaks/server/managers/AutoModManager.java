@@ -131,7 +131,7 @@
         private AutoModRule findRuleForViolation(ViolationType type, int count) {
             List<AutoModRule> matchingRules = rules.stream()
                     .filter(rule -> rule.getViolationType() == type)
-                    .toList();
+                    .collect(java.util.stream.Collectors.toList());
 
             if (matchingRules.isEmpty()) return null;
 

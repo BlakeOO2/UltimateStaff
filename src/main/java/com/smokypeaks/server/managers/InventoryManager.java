@@ -45,11 +45,17 @@ public class InventoryManager {
 
     public void openOfflineInventory(Player staff, OfflinePlayer target) {
         // Log the attempt to access offline inventory
-        plugin.getLogger().info("Staff member " + staff.getName() + " is accessing offline inventory of " + target.getName());
+        plugin.getLogger().info("Staff member " + staff.getName() + " is accessing offline inventory of " + target.getName() + " (UUID: " + target.getUniqueId() + ")");
+
+        // Add a debug message to check if the player has played before
+        if (!target.hasPlayedBefore()) {
+            staff.sendMessage("§c[Staff] §eWarning: Player " + target.getName() + " has never played on this server before.");
+            plugin.getLogger().warning("Attempted to access inventory of a player who hasn't played before: " + target.getName());
+        }
 
         ItemStack[] inventory = storage.loadInventory(target.getUniqueId());
         if (inventory == null) {
-            staff.sendMessage("§c[Staff] §eNo saved inventory found for that player!");
+            staff.sendMessage("§c[Staff] §eNo saved inventory found for " + target.getName() + ". They may need to reconnect for data to be saved.");
             plugin.getLogger().warning("Failed to load offline inventory for " + target.getName() + " - no data found");
             return;
         }
@@ -90,9 +96,26 @@ public class InventoryManager {
     }
 
     public void savePlayerData(Player player) {
-        storage.saveInventory(player.getUniqueId(),
-                player.getInventory().getContents(),
-                player.getEnderChest().getContents());
+        if (player == null) {
+            plugin.getLogger().warning("Attempted to save inventory data for null player");
+            return;
+        }
+
+        try {
+            storage.saveInventory(player.getUniqueId(),
+                    player.getInventory().getContents(),
+                    player.getEnderChest().getContents());
+
+            if (plugin.getConfig().getBoolean("debug", false)) {
+                plugin.getLogger().info("Saved inventory data for " + player.getName() + 
+                    " (" + player.getUniqueId() + ")");
+            }
+        } catch (Exception e) {
+            plugin.getLogger().severe("Error saving inventory data for " + player.getName() + ": " + e.getMessage());
+            if (plugin.getConfig().getBoolean("debug", false)) {
+                e.printStackTrace();
+            }
+        }
     }
 
     public boolean isViewingInventory(Player staff) {
