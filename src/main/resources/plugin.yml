@@ -238,3 +238,11 @@ permissions:
   ultimatestaff.automod.deny:
     description: Permission to mark messages as inappropriate in the AutoMod system
     default: op
+
+  ultimatestaff.staff.punish.immunity:
+    description: Immunity from being punished by regular staff
+    default: op
+
+  ultimatestaff.admin.override:
+    description: Override immunity and other restrictions
+    default: op

@@ -22,7 +22,7 @@ public class StaffModeCommand implements CommandExecutor {
             return true;
         }
 
-        if (!player.hasPermission(StaffPermissions.Staff.MODE)) {
+        if (!player.hasPermission("ultimatestaff.staff.mode")) {
             player.sendMessage("§cYou don't have permission to use staff mode!");
             return true;
         }

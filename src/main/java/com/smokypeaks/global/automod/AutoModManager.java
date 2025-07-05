@@ -31,8 +31,8 @@ public class AutoModManager {
 
         addRule(new AutoModRule(ViolationType.CHAT_ABUSE, "Chat Abuse or Spam", PunishmentType.WARN, 0));
         addRule(new AutoModRule(ViolationType.CHAT_ABUSE, "Chat Abuse or Spam", PunishmentType.TEMP_MUTE, 60)); // 1 hour
-        addRule(new AutoModRule(ViolationType.CHAT_ABUSE, "Chat Abuse or Spam", PunishmentType.TEMP_MUTE, 1440)); // 24 hours
-        addRule(new AutoModRule(ViolationType.CHAT_ABUSE, "Chat Abuse or Spam", PunishmentType.PERMANENT_MUTE, 0));
+        //addRule(new AutoModRule(ViolationType.CHAT_ABUSE, "Chat Abuse or Spam", PunishmentType.TEMP_MUTE, 1440)); // 24 hours
+        //addRule(new AutoModRule(ViolationType.CHAT_ABUSE, "Chat Abuse or Spam", PunishmentType.PERMANENT_MUTE, 0));
 
         addRule(new AutoModRule(ViolationType.THREATS, "Threats, Doxing, or Malicious Links", PunishmentType.PERMANENT_BAN, 0));
 
@@ -44,7 +44,7 @@ public class AutoModManager {
         addRule(new AutoModRule(ViolationType.UNFAIR_ADVANTAGE, "Unfair Mods/Macros/Scripts", PunishmentType.TEMP_BAN, 1440)); // 24 hours
         addRule(new AutoModRule(ViolationType.UNFAIR_ADVANTAGE, "Unfair Mods/Macros/Scripts", PunishmentType.PERMANENT_BAN, 0));
 
-        addRule(new AutoModRule(ViolationType.CHEATING, "X-Ray/Freecam/Cheats", PunishmentType.PERMANENT_BAN, 0));
+        addRule(new AutoModRule(ViolationType.CHEATING, "X-Ray/Cheats", PunishmentType.PERMANENT_BAN, 0));
 
         addRule(new AutoModRule(ViolationType.BUG_ABUSE, "Bug Abuse/Duping", PunishmentType.PERMANENT_BAN, 0));
 

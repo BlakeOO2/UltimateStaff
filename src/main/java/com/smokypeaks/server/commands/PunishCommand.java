@@ -27,7 +27,7 @@ public class PunishCommand implements CommandExecutor, TabCompleter {
             return true;
         }
 
-        if (!staff.hasPermission(StaffPermissions.Staff.PUNISH)) {
+        if (!staff.hasPermission("ultimatestaff.staff.punish")) {
             staff.sendMessage("§cYou don't have permission to use this command!");
             return true;
         }
@@ -52,8 +52,8 @@ public class PunishCommand implements CommandExecutor, TabCompleter {
         }
 
         // Check if staff can punish the target
-        if (target.hasPermission(StaffPermissions.Staff.PUNISH_IMMUNITY) && 
-            !staff.hasPermission(StaffPermissions.Admin.OVERRIDE)) {
+        if (target.hasPermission("ultimatestaff.staff.punish.immunity") && 
+            !staff.hasPermission("ultimatestaff.admin.override")) {
             staff.sendMessage("§cYou cannot punish this player!");
             return true;
         }
